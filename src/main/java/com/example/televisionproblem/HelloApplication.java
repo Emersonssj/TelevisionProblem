@@ -1,9 +1,6 @@
 package com.example.televisionproblem;
 
-import javafx.animation.Animation;
-import javafx.animation.KeyFrame;
 import javafx.collections.FXCollections;
-import javafx.animation.Timeline;
 import javafx.application.Application;
 import javafx.collections.ObservableList;
 import javafx.scene.Scene;
@@ -15,6 +12,9 @@ import javafx.scene.text.Text;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.util.Duration;
+import javafx.animation.PauseTransition;
+import javafx.animation.SequentialTransition;
+import javafx.animation.TranslateTransition;
 
 public class HelloApplication extends Application {
     @Override
@@ -29,29 +29,8 @@ public class HelloApplication extends Application {
         topMenu.getChildren().addAll(addHospedeButton);
         root.setTop(topMenu);
 
-        // Parte central: Área para animação
-        Pane animationPane = new Pane();
-        animationPane.setStyle("-fx-background-color: #ecf0f1;");
-
-        // Criar uma animação simples
-        Circle circle = new Circle(50, Color.CORNFLOWERBLUE);
-        circle.setTranslateX(50);
-        circle.setTranslateY(100);
-        animationPane.getChildren().add(circle);
-
-        Timeline timeline = new Timeline(new KeyFrame(Duration.millis(20), event -> {
-            circle.setTranslateX(circle.getTranslateX() + 1);
-            if (circle.getTranslateX() > animationPane.getWidth()) {
-                circle.setTranslateX(-circle.getRadius()); // Recomeça do lado esquerdo
-            }
-        }));
-        timeline.setCycleCount(Animation.INDEFINITE);
-        timeline.play();
-        root.setCenter(animationPane);
-
         // Parte direita: Log de mensagens
         ObservableList<String> messages = FXCollections.observableArrayList();
-        addHospedeButton.setOnAction(e -> openSecondaryStage(messages));
         VBox logBox = new VBox(5);
         logBox.setStyle("-fx-padding: 10; -fx-background-color: #f7f7f7;");
 
@@ -75,6 +54,14 @@ public class HelloApplication extends Application {
         logArea.setStyle("-fx-padding: 10;");
         root.setRight(logArea);
 
+        // Parte central: Animação
+        Pane animationPane = new Pane();
+        animationPane.setStyle("-fx-background-color: #ecf0f1;");
+        root.setCenter(animationPane);
+
+        // Chamar a janela secundária e passar o Pane de animação
+        addHospedeButton.setOnAction(e -> openSecondaryStage(messages, animationPane));
+
         // Configurar a cena
         Scene scene = new Scene(root, 800, 600);
         stage.setTitle("Problema da televisão");
@@ -82,13 +69,27 @@ public class HelloApplication extends Application {
         stage.show();
     }
 
-    public static void main(String[] args) {
-        launch();
+    public static void generateHospedeAnimation(Pane animationPane, String id, String channel, String timeWatchingTV) {
+        // Criar o boneco
+        Circle person = new Circle(20, Color.BLUE);
+        person.setTranslateX(1); // Posição inicial X
+        person.setTranslateY(500); // Posição inicial Y
+        animationPane.getChildren().add(person);
+
+        // Configurar a animação
+        TranslateTransition moveToPoint = new TranslateTransition(Duration.seconds(4), person);
+        moveToPoint.setToX(500); // Posição final X
+        moveToPoint.setToY(500); // Posição final Y
+
+        PauseTransition pauseAtPoint = new PauseTransition(Duration.seconds(2));
+
+        SequentialTransition animation = new SequentialTransition(moveToPoint, pauseAtPoint);
+        animation.play();
     }
-    private void openSecondaryStage(ObservableList<String> messages) {
-        // Criar o novo Stage
+
+    private void openSecondaryStage(ObservableList<String> messages, Pane animationPane) {
         Stage secondaryStage = new Stage();
-        secondaryStage.initModality(Modality.APPLICATION_MODAL); // Modal para bloquear a tela principal
+        secondaryStage.initModality(Modality.APPLICATION_MODAL);
         secondaryStage.setTitle("Adicionar Mensagens");
 
         // Layout da nova tela
@@ -96,28 +97,29 @@ public class HelloApplication extends Application {
         layout.setStyle("-fx-padding: 10;");
 
         // Campo de entrada para adicionar mensagens
-        TextField idField = new TextField();
-        idField.setPromptText("Digite o nome");
-        TextField channelField = new TextField();
-        channelField.setPromptText("Digite o canal");
-        TextField inputField = new TextField();
-        inputField.setPromptText("Digite o tempo");
-        Button addButton = new Button("Adicionar");
-        addButton.setOnAction(e -> {
-            String newMessage = inputField.getText();
-            if (!newMessage.isEmpty()) {
-                messages.add(newMessage); // Adiciona à lista de mensagens
-                inputField.clear(); // Limpa o campo de entrada
-                secondaryStage.close();
-            }
-        });
+        Label idLabel = new Label("ID do hóspede");
+        TextField idTextField = new TextField();
 
-        layout.getChildren().addAll(new Label("Preencha informações sobre o hóspede"), inputField, addButton);
+        Label channelLabel = new Label("Canal do hóspede");
+        TextField channelTextField = new TextField();
+
+        Label timeLabel = new Label("Tempo assistindo do hóspede");
+        TextField timeWatchingTextField = new TextField();
+
+        Button createHospedeButton = new Button("Adicionar");
+        createHospedeButton.setOnAction(e -> {
+                secondaryStage.close();
+                generateHospedeAnimation(animationPane, idTextField.getText(), channelTextField.getText(), timeWatchingTextField.getText());
+        });
+        layout.getChildren().addAll(idLabel, idTextField, channelLabel, channelTextField, timeLabel, timeWatchingTextField, createHospedeButton);
 
         // Configurar a cena e mostrar a tela
-        Scene scene = new Scene(layout, 300, 200);
+        Scene scene = new Scene(layout, 300, 300);
         secondaryStage.setScene(scene);
         secondaryStage.show();
     }
 
+    public static void main(String[] args) {
+        launch();
+    }
 }
