@@ -1,5 +1,7 @@
 package com.example.televisionproblem;
 
+import adapters.Hospede;
+import adapters.Semaforo;
 import javafx.animation.Animation;
 import javafx.animation.KeyFrame;
 import javafx.collections.FXCollections;
@@ -87,6 +89,7 @@ public class HelloApplication extends Application {
     }
     private void openSecondaryStage(ObservableList<String> messages) {
         // Criar o novo Stage
+        Semaforo semaforo = new Semaforo();
         Stage secondaryStage = new Stage();
         secondaryStage.initModality(Modality.APPLICATION_MODAL); // Modal para bloquear a tela principal
         secondaryStage.setTitle("Adicionar Mensagens");
@@ -106,9 +109,12 @@ public class HelloApplication extends Application {
         addButton.setOnAction(e -> {
             String newMessage = inputField.getText();
             if (!newMessage.isEmpty()) {
-                messages.add(newMessage); // Adiciona à lista de mensagens
+                Hospede hospede = new Hospede(1, 1, 5, 3, semaforo);
+                messages.add("Messagem"); // Adiciona à lista de mensagens
                 inputField.clear(); // Limpa o campo de entrada
                 secondaryStage.close();
+
+
             }
         });
 

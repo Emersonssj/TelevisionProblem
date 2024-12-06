@@ -1,38 +1,42 @@
 package adapters;
 
-import java.util.ArrayList;
-import java.util.List;
-
-public class Hospede extends Thread{
+public class Hospede extends Thread {
     private int id;
     private int canal;
     private int ttv;
     private int td;
+    private Semaforo semaforo;
 
-    public Hospede(int qtdCanais, int id, int tempoAssistido,int tempoDescansando) {
+    public Hospede(int id, int canal, int ttv, int td, Semaforo semaforo) {
         this.id = id;
-        this.canal = qtdCanais;
-        this.ttv = tempoAssistido;
-        this.td = tempoDescansando;
-
-        // Aqui será mostrado uma mensagem na interface com as infomações de hospede criado com sucesso
-        System.out.println("Hospede "+id+" "+canal+" "+ttv+" "+td +" Criado com sucesso");
+        this.canal = canal;
+        this.ttv = ttv;
+        this.td = td;
+        this.semaforo = semaforo;
     }
 
     @Override
-    public void run(){
-        System.out.println("Estou assistindo TV no canal "+this.canal);
-    }
+    public void run() {
+        while (true) {
+            semaforo.adquirir();
+            try {
+                System.out.println("Hóspede " + id + " está assistindo ao canal " + canal);
+                Thread.sleep(ttv * 1000L);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                System.out.println("Erro: " + e.getMessage());
+            } finally {
+                semaforo.liberar();
+                System.out.println("Hóspede " + id + " terminou de assistir e liberou a televisão.");
+            }
 
-    public List<Integer> MostraDados(){
-        List<Integer> hospedeDados = new ArrayList<>();
-
-        hospedeDados.add(this.id);
-        hospedeDados.add(this.canal);
-        hospedeDados.add(this.ttv);
-        hospedeDados.add(this.td);
-
-        System.out.println("Hospede "+id+" "+canal+" "+ttv+" "+td);
-        return hospedeDados;
+            System.out.println("Hóspede " + id + " está descansando.");
+            try {
+                Thread.sleep(td * 1000L);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                System.out.println("Erro: " + e.getMessage());
+            }
+        }
     }
 }
