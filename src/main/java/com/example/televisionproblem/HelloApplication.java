@@ -1,5 +1,5 @@
 package com.example.televisionproblem;
-
+import java.util.concurrent.Semaphore;
 import javafx.collections.FXCollections;
 import javafx.application.Application;
 import javafx.collections.ObservableList;
@@ -17,6 +17,10 @@ import javafx.animation.SequentialTransition;
 import javafx.animation.TranslateTransition;
 
 public class HelloApplication extends Application {
+    public static void main(String[] args) {
+        Semaphore mutex = new Semaphore(1);
+        launch();
+    }
     @Override
     public void start(Stage stage) {
         // Configuração do layout principal
@@ -69,7 +73,7 @@ public class HelloApplication extends Application {
         stage.show();
     }
 
-    public static void generateHospedeAnimation(Pane animationPane, String id, String channel, String timeWatchingTV) {
+    public static void generateHospedeAnimation(Pane animationPane, String id, String channel, String timeWatchingTV, String timeResting) {
         // Criar o boneco
         Circle person = new Circle(20, Color.BLUE);
         person.setTranslateX(1); // Posição inicial X
@@ -106,20 +110,19 @@ public class HelloApplication extends Application {
         Label timeLabel = new Label("Tempo assistindo do hóspede");
         TextField timeWatchingTextField = new TextField();
 
+        Label timeRestingLabel = new Label("Tempo descansando");
+        TextField timeRestingTextField = new TextField();
+
         Button createHospedeButton = new Button("Adicionar");
         createHospedeButton.setOnAction(e -> {
                 secondaryStage.close();
-                generateHospedeAnimation(animationPane, idTextField.getText(), channelTextField.getText(), timeWatchingTextField.getText());
+                generateHospedeAnimation(animationPane, idTextField.getText(), channelTextField.getText(), timeWatchingTextField.getText(), timeRestingLabel.getText());
         });
-        layout.getChildren().addAll(idLabel, idTextField, channelLabel, channelTextField, timeLabel, timeWatchingTextField, createHospedeButton);
+        layout.getChildren().addAll(idLabel, idTextField, channelLabel, channelTextField, timeLabel, timeWatchingTextField, timeRestingLabel, timeRestingTextField , createHospedeButton);
 
         // Configurar a cena e mostrar a tela
         Scene scene = new Scene(layout, 300, 300);
         secondaryStage.setScene(scene);
         secondaryStage.show();
-    }
-
-    public static void main(String[] args) {
-        launch();
     }
 }
