@@ -1,5 +1,7 @@
 package com.example.televisionproblem;
 import java.util.concurrent.Semaphore;
+
+import adapters.Hospede;
 import javafx.collections.FXCollections;
 import javafx.application.Application;
 import javafx.collections.ObservableList;
@@ -17,8 +19,13 @@ import javafx.animation.SequentialTransition;
 import javafx.animation.TranslateTransition;
 
 public class HelloApplication extends Application {
+    public static final Semaphore mutex = new Semaphore(1);
+    public static final Semaphore changeChannel = new Semaphore(0);
+
+    public static int currentChannel = 0;
+    public static int currentWatchers = 0;
+
     public static void main(String[] args) {
-        Semaphore mutex = new Semaphore(1);
         launch();
     }
     @Override
@@ -75,13 +82,22 @@ public class HelloApplication extends Application {
 
     public static void generateHospedeAnimation(Pane animationPane, String id, String channel, String timeWatchingTV, String timeResting) {
         // Criar o boneco
-        Circle person = new Circle(20, Color.BLUE);
-        person.setTranslateX(1); // Posição inicial X
-        person.setTranslateY(500); // Posição inicial Y
-        animationPane.getChildren().add(person);
+        VBox vbox = new VBox(5); // Espaçamento de 10 pixels entre os elementos
+        vbox.setStyle("-fx-padding: 20; -fx-background-color: #f0f0f0;");
+
+        Text text1 = new Text("ID: " + id);
+        Text text2 = new Text("Canal: " + channel);
+        Text text3 = new Text("Tempo assistindo: " + timeWatchingTV);
+        Text text4 = new Text("Tempo descansando: " + timeResting);
+
+
+        vbox.getChildren().addAll(text1, text2, text3, text4);
+        vbox.setTranslateX(1); // Posição inicial X
+        vbox.setTranslateY(500); // Posição inicial Y
+        animationPane.getChildren().add(vbox);
 
         // Configurar a animação
-        TranslateTransition moveToPoint = new TranslateTransition(Duration.seconds(4), person);
+        TranslateTransition moveToPoint = new TranslateTransition(Duration.seconds(4), vbox);
         moveToPoint.setToX(500); // Posição final X
         moveToPoint.setToY(500); // Posição final Y
 
@@ -115,8 +131,20 @@ public class HelloApplication extends Application {
 
         Button createHospedeButton = new Button("Adicionar");
         createHospedeButton.setOnAction(e -> {
-                secondaryStage.close();
-                generateHospedeAnimation(animationPane, idTextField.getText(), channelTextField.getText(), timeWatchingTextField.getText(), timeRestingLabel.getText());
+            String id = idTextField.getText();
+            String channel = channelTextField.getText();
+            String timeWatching = timeWatchingTextField.getText();
+            String timeResting = timeRestingTextField.getText();
+
+            Hospede hospede = new Hospede(
+                    Integer.parseInt(id),
+                    Integer.parseInt(channel),
+                    Integer.parseInt(timeWatching),
+                    Integer.parseInt(timeResting)
+            );
+            new Thread(hospede).start();
+            secondaryStage.close();
+            generateHospedeAnimation(animationPane, id, channel, timeWatching, timeResting);
         });
         layout.getChildren().addAll(idLabel, idTextField, channelLabel, channelTextField, timeLabel, timeWatchingTextField, timeRestingLabel, timeRestingTextField , createHospedeButton);
 
