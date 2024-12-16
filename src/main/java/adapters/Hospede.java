@@ -5,10 +5,10 @@ import java.util.Random;
 
 // Classe Hospede
 public class Hospede extends Thread {
-    private static final int MAX_HOSPEDES_NA_TV = 3; // Quantidade máxima de hóspedes assistindo TV ao mesmo tempo
+    private static final int MAX_HOSPEDES_NA_TV = 3;
     private static final Semaphore tvSemaphore = new Semaphore(MAX_HOSPEDES_NA_TV);
-    private static int canalAtual = -1; // Canal atualmente sendo assistido (-1 indica que a TV está desligada)
-    private static int espectadoresAssistindo = 0; // Quantidade de hóspedes assistindo TV
+    private static int canalAtual = -1;
+    private static int espectadoresAssistindo = 0;
     private String nome;
     private int canalFavorito;
     private int tempoAssistindoTv;
