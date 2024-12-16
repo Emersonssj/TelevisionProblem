@@ -1,5 +1,7 @@
 package com.example.televisionproblem;
+import java.util.concurrent.Semaphore;
 
+import adapters.Hospede;
 import javafx.collections.FXCollections;
 import javafx.application.Application;
 import javafx.collections.ObservableList;
@@ -11,12 +13,16 @@ import javafx.scene.shape.Circle;
 import javafx.scene.text.Text;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
-import javafx.util.Duration;
-import javafx.animation.PauseTransition;
-import javafx.animation.SequentialTransition;
-import javafx.animation.TranslateTransition;
 
 public class HelloApplication extends Application {
+    public static final Semaphore mutex = new Semaphore(1);
+    public static final Semaphore changeChannel = new Semaphore(0);
+    public static int currentChannel = 0;
+    public static int currentWatchers = 0;
+
+    public static void main(String[] args) {
+        launch();
+    }
     @Override
     public void start(Stage stage) {
         // Configuração do layout principal
@@ -69,24 +75,6 @@ public class HelloApplication extends Application {
         stage.show();
     }
 
-    public static void generateHospedeAnimation(Pane animationPane, String id, String channel, String timeWatchingTV) {
-        // Criar o boneco
-        Circle person = new Circle(20, Color.BLUE);
-        person.setTranslateX(1); // Posição inicial X
-        person.setTranslateY(500); // Posição inicial Y
-        animationPane.getChildren().add(person);
-
-        // Configurar a animação
-        TranslateTransition moveToPoint = new TranslateTransition(Duration.seconds(4), person);
-        moveToPoint.setToX(500); // Posição final X
-        moveToPoint.setToY(500); // Posição final Y
-
-        PauseTransition pauseAtPoint = new PauseTransition(Duration.seconds(2));
-
-        SequentialTransition animation = new SequentialTransition(moveToPoint, pauseAtPoint);
-        animation.play();
-    }
-
     private void openSecondaryStage(ObservableList<String> messages, Pane animationPane) {
         Stage secondaryStage = new Stage();
         secondaryStage.initModality(Modality.APPLICATION_MODAL);
@@ -106,12 +94,34 @@ public class HelloApplication extends Application {
         Label timeLabel = new Label("Tempo assistindo do hóspede");
         TextField timeWatchingTextField = new TextField();
 
+        Label timeRestingLabel = new Label("Tempo descansando");
+        TextField timeRestingTextField = new TextField();
+
         Button createHospedeButton = new Button("Adicionar");
         createHospedeButton.setOnAction(e -> {
-                secondaryStage.close();
-                generateHospedeAnimation(animationPane, idTextField.getText(), channelTextField.getText(), timeWatchingTextField.getText());
+            String id = idTextField.getText();
+            String channel = channelTextField.getText();
+            String timeWatching = timeWatchingTextField.getText();
+            String timeResting = timeRestingTextField.getText();
+
+            Circle hospedeCircle = new Circle(20, Color.BLUE);
+            hospedeCircle.setCenterX(50);
+            hospedeCircle.setCenterY(200);
+
+            Hospede hospede = new Hospede(
+                    Integer.parseInt(id),
+                    Integer.parseInt(channel),
+                    Integer.parseInt(timeWatching),
+                    Integer.parseInt(timeResting),
+                    hospedeCircle
+            );
+
+            animationPane.getChildren().add(hospede.circle);
+
+            new Thread(hospede).start();
+            secondaryStage.close();
         });
-        layout.getChildren().addAll(idLabel, idTextField, channelLabel, channelTextField, timeLabel, timeWatchingTextField, createHospedeButton);
+        layout.getChildren().addAll(idLabel, idTextField, channelLabel, channelTextField, timeLabel, timeWatchingTextField, timeRestingLabel, timeRestingTextField , createHospedeButton);
 
         // Configurar a cena e mostrar a tela
         Scene scene = new Scene(layout, 300, 300);
@@ -119,7 +129,4 @@ public class HelloApplication extends Application {
         secondaryStage.show();
     }
 
-    public static void main(String[] args) {
-        launch();
-    }
 }
