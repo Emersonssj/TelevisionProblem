@@ -75,7 +75,11 @@ public class HelloApplication extends Application {
         stage.show();
     }
 
-    private void openSecondaryStage(ObservableList<String> messages, Pane animationPane) {
+    public static void main(String[] args) {
+        launch();
+    }
+    private void openSecondaryStage(ObservableList<String> messages) {
+        // Criar o novo Stage
         Stage secondaryStage = new Stage();
         secondaryStage.initModality(Modality.APPLICATION_MODAL);
         secondaryStage.setTitle("Adicionar Mensagens");
@@ -85,41 +89,20 @@ public class HelloApplication extends Application {
         layout.setStyle("-fx-padding: 10;");
 
         // Campo de entrada para adicionar mensagens
-        Label idLabel = new Label("ID do hóspede");
-        TextField idTextField = new TextField();
-
-        Label channelLabel = new Label("Canal do hóspede");
-        TextField channelTextField = new TextField();
-
-        Label timeLabel = new Label("Tempo assistindo do hóspede");
-        TextField timeWatchingTextField = new TextField();
-
-        Label timeRestingLabel = new Label("Tempo descansando");
-        TextField timeRestingTextField = new TextField();
-
-        Button createHospedeButton = new Button("Adicionar");
-        createHospedeButton.setOnAction(e -> {
-            String id = idTextField.getText();
-            String channel = channelTextField.getText();
-            String timeWatching = timeWatchingTextField.getText();
-            String timeResting = timeRestingTextField.getText();
-
-            Circle hospedeCircle = new Circle(20, Color.BLUE);
-            hospedeCircle.setCenterX(50);
-            hospedeCircle.setCenterY(200);
-
-            Hospede hospede = new Hospede(
-                    Integer.parseInt(id),
-                    Integer.parseInt(channel),
-                    Integer.parseInt(timeWatching),
-                    Integer.parseInt(timeResting),
-                    hospedeCircle
-            );
-
-            animationPane.getChildren().add(hospede.circle);
-
-            new Thread(hospede).start();
-            secondaryStage.close();
+        TextField idField = new TextField();
+        idField.setPromptText("Digite o nome");
+        TextField channelField = new TextField();
+        channelField.setPromptText("Digite o canal");
+        TextField inputField = new TextField();
+        inputField.setPromptText("Digite o tempo");
+        Button addButton = new Button("Adicionar");
+        addButton.setOnAction(e -> {
+            String newMessage = inputField.getText();
+            if (!newMessage.isEmpty()) {
+                messages.add(newMessage); // Adiciona à lista de mensagens
+                inputField.clear(); // Limpa o campo de entrada
+                secondaryStage.close();
+            }
         });
         layout.getChildren().addAll(idLabel, idTextField, channelLabel, channelTextField, timeLabel, timeWatchingTextField, timeRestingLabel, timeRestingTextField , createHospedeButton);
 
