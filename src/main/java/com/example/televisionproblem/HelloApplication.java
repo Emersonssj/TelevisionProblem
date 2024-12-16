@@ -13,15 +13,10 @@ import javafx.scene.shape.Circle;
 import javafx.scene.text.Text;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
-import javafx.util.Duration;
-import javafx.animation.PauseTransition;
-import javafx.animation.SequentialTransition;
-import javafx.animation.TranslateTransition;
 
 public class HelloApplication extends Application {
     public static final Semaphore mutex = new Semaphore(1);
     public static final Semaphore changeChannel = new Semaphore(0);
-
     public static int currentChannel = 0;
     public static int currentWatchers = 0;
 
@@ -80,33 +75,6 @@ public class HelloApplication extends Application {
         stage.show();
     }
 
-    public static void generateHospedeAnimation(Pane animationPane, String id, String channel, String timeWatchingTV, String timeResting) {
-        // Criar o boneco
-        VBox vbox = new VBox(5); // Espaçamento de 10 pixels entre os elementos
-        vbox.setStyle("-fx-padding: 20; -fx-background-color: #f0f0f0;");
-
-        Text text1 = new Text("ID: " + id);
-        Text text2 = new Text("Canal: " + channel);
-        Text text3 = new Text("Tempo assistindo: " + timeWatchingTV);
-        Text text4 = new Text("Tempo descansando: " + timeResting);
-
-
-        vbox.getChildren().addAll(text1, text2, text3, text4);
-        vbox.setTranslateX(1); // Posição inicial X
-        vbox.setTranslateY(500); // Posição inicial Y
-        animationPane.getChildren().add(vbox);
-
-        // Configurar a animação
-        TranslateTransition moveToPoint = new TranslateTransition(Duration.seconds(4), vbox);
-        moveToPoint.setToX(500); // Posição final X
-        moveToPoint.setToY(500); // Posição final Y
-
-        PauseTransition pauseAtPoint = new PauseTransition(Duration.seconds(2));
-
-        SequentialTransition animation = new SequentialTransition(moveToPoint, pauseAtPoint);
-        animation.play();
-    }
-
     private void openSecondaryStage(ObservableList<String> messages, Pane animationPane) {
         Stage secondaryStage = new Stage();
         secondaryStage.initModality(Modality.APPLICATION_MODAL);
@@ -136,15 +104,22 @@ public class HelloApplication extends Application {
             String timeWatching = timeWatchingTextField.getText();
             String timeResting = timeRestingTextField.getText();
 
+            Circle hospedeCircle = new Circle(20, Color.BLUE);
+            hospedeCircle.setCenterX(50);
+            hospedeCircle.setCenterY(200);
+
             Hospede hospede = new Hospede(
                     Integer.parseInt(id),
                     Integer.parseInt(channel),
                     Integer.parseInt(timeWatching),
-                    Integer.parseInt(timeResting)
+                    Integer.parseInt(timeResting),
+                    hospedeCircle
             );
+
+            animationPane.getChildren().add(hospede.circle);
+
             new Thread(hospede).start();
             secondaryStage.close();
-            generateHospedeAnimation(animationPane, id, channel, timeWatching, timeResting);
         });
         layout.getChildren().addAll(idLabel, idTextField, channelLabel, channelTextField, timeLabel, timeWatchingTextField, timeRestingLabel, timeRestingTextField , createHospedeButton);
 
@@ -153,4 +128,5 @@ public class HelloApplication extends Application {
         secondaryStage.setScene(scene);
         secondaryStage.show();
     }
+
 }
