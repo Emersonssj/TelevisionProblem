@@ -1,13 +1,16 @@
 package com.example.televisionproblem;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.Semaphore;
+import java.util.function.BiFunction;
 
 import adapters.Hospede;
 import javafx.collections.FXCollections;
 import javafx.application.Application;
 import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
@@ -16,15 +19,23 @@ import javafx.scene.shape.Circle;
 import javafx.scene.text.Text;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
+import widgets.BallWidget;
+import widgets.TVWidget;
 
 public class HelloApplication extends Application {
     public static final int MAX_HOSPEDES_NA_TV = 3;
     public static final Semaphore tvSemaphore = new Semaphore(MAX_HOSPEDES_NA_TV);
     public static int canalAtual = -1;
     public static int espectadoresAssistindo = 0;
+    public static TVWidget tvWidget = new TVWidget();
+    public static List<BallWidget> ballWidgets =  new ArrayList<>();
+    public static List<Hospede> hospedes = new ArrayList<>();
+    public static BiFunction<Double, Double, Double[]> movement1 = (x, y) -> new Double[]{x + 2, y + 2 * Math.sin(x / 50)};
+    public static StackPane centerLayout = new StackPane();
 
-    List<Hospede> hospedes = new ArrayList<>();
-    List<Circle> hospedesDraw = new ArrayList<>();
+    public static void removeBallWidgetById(String id) {
+        ballWidgets.removeIf(item -> Objects.equals(item.getIdd(), id));
+    }
 
     public static void incrementaEspectador(){
         espectadoresAssistindo++;
@@ -120,7 +131,7 @@ public class HelloApplication extends Application {
 
         ScrollPane logScrollPane = new ScrollPane(logBox);
         logScrollPane.setFitToWidth(true);
-        logScrollPane.setPrefWidth(200);
+        logScrollPane.setPrefWidth(250);
         VBox.setVgrow(logScrollPane, Priority.ALWAYS);
 
         VBox logArea = new VBox(5, logScrollPane);
@@ -130,6 +141,7 @@ public class HelloApplication extends Application {
         // Parte central: Animação
         Pane animationPane = new Pane();
         animationPane.setStyle("-fx-background-color: #ecf0f1;");
+        animationPane.getChildren().addAll(centerLayout, tvWidget);
         root.setCenter(animationPane);
 
         // Chamar a janela secundária e passar o Pane de animação
@@ -173,17 +185,17 @@ public class HelloApplication extends Application {
             String timeWatching = timeWatchingTextField.getText();
             String timeResting = timeRestingTextField.getText();
 
-            Circle hospedeCircle = new Circle(20, Color.BLUE);
-            hospedeCircle.setCenterX(50);
-            hospedeCircle.setCenterY(200);
-
             hospedes.add(new Hospede(
-                            Integer.parseInt(id),
+                            id,
                             Integer.parseInt(channel),
                             Integer.parseInt(timeWatching),
                             Integer.parseInt(timeResting)
                     )
             );
+
+            BallWidget ball = new BallWidget(id,Color.color(Math.random(), Math.random(), Math.random()), 100, 500);
+            ballWidgets.add(ball); // Adicionar à lista
+            centerLayout.getChildren().add(ball);
 
             hospedes.get(hospedes.size()-1).start();
             secondaryStage.close();
@@ -195,5 +207,4 @@ public class HelloApplication extends Application {
         secondaryStage.setScene(scene);
         secondaryStage.show();
     }
-
 }

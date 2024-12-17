@@ -2,18 +2,17 @@ package adapters;
 
 import com.example.televisionproblem.HelloApplication;
 
-import java.util.concurrent.Semaphore;
 import java.util.Random;
 
 // Classe Hospede
 public class Hospede extends Thread {
-    private int id;
+    private String id;
     private int canalFavorito;
     private int tempoAssistindoTv;
     private int tempoDescansando;
     private Random random = new Random();
 
-    public Hospede(int id, int canalFavorito, int tempoAssistindoTv, int tempoDescansando) {
+    public Hospede(String id, int canalFavorito, int tempoAssistindoTv, int tempoDescansando) {
         this.id = id;
         this.canalFavorito = canalFavorito;
         this.tempoAssistindoTv = tempoAssistindoTv;
@@ -29,6 +28,8 @@ public class Hospede extends Thread {
                     HelloApplication.reservaTv();
                     HelloApplication.incrementaEspectador();
                     HelloApplication.atualizaCanalAtual(canalFavorito);
+                    HelloApplication.ballWidgets.getFirst().moveTo(1400, 500);
+                    HelloApplication.tvWidget.setChannel(canalFavorito);
                     System.out.println(id + " ligou a TV no canal " + HelloApplication.mostraCanalAtual() + " e está assistindo por " + tempoAssistindoTv + " segundos.");
                     conseguiuAssistir = true;
                 } else {
@@ -57,6 +58,7 @@ public class Hospede extends Thread {
             if (HelloApplication.mostraQtdEspectadores() == 0) {
                 System.out.println(id + " foi o último a sair da TV. TV desligada.");
                 HelloApplication.atualizaCanalAtual(-1);
+                HelloApplication.tvWidget.setChannel(0);
                 HelloApplication.liberaTv();
                 Hospede.class.notifyAll();
             } else {
@@ -71,6 +73,7 @@ public class Hospede extends Thread {
     }
 
     public void descansando() {
+        HelloApplication.ballWidgets.getFirst().moveTo(1400, 10);
         String atividade = escolherOutraAtividade();
         System.out.println(id + " está " + atividade + " por " + tempoDescansando + " segundos.");
 
