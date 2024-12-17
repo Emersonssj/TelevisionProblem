@@ -1,4 +1,6 @@
 package com.example.televisionproblem;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.Semaphore;
 
 import adapters.Hospede;
@@ -15,10 +17,43 @@ import javafx.stage.Modality;
 import javafx.stage.Stage;
 
 public class HelloApplication extends Application {
-    public static final Semaphore mutex = new Semaphore(1);
-    public static final Semaphore changeChannel = new Semaphore(0);
-    public static int currentChannel = 0;
-    public static int currentWatchers = 0;
+    public static final int MAX_HOSPEDES_NA_TV = 3; // Quantidade máxima de hóspedes assistindo TV ao mesmo tempo
+    public static final Semaphore tvSemaphore = new Semaphore(MAX_HOSPEDES_NA_TV);
+    public static int canalAtual = -1;
+    public static int espectadoresAssistindo = 0;
+
+    List<Hospede> hospedes = new ArrayList<>();
+    public static void incrementaEspectador(){
+        espectadoresAssistindo++;
+    }
+
+    public static  void decrementaEspectador(){
+        espectadoresAssistindo--;
+    }
+
+    public static int mostraQtdEspectadores(){
+        return espectadoresAssistindo;
+    }
+
+    public static void atualizaCanalAtual(int novoValor){
+        canalAtual = novoValor;
+    }
+
+    public static int mostraCanalAtual(){
+        return canalAtual;
+    }
+
+    public static void reservaTv(){
+        try {
+            tvSemaphore.acquire(); // Adquire acesso à TV
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void liberaTv(){
+        tvSemaphore.release();
+    }
 
     public static void main(String[] args) {
         launch();
@@ -108,14 +143,15 @@ public class HelloApplication extends Application {
             hospedeCircle.setCenterX(50);
             hospedeCircle.setCenterY(200);
 
-            Hospede hospede = new Hospede(
+
+            hospedes.add(new Hospede(
                     Integer.parseInt(id),
                     Integer.parseInt(channel),
                     Integer.parseInt(timeWatching),
-                    Integer.parseInt(timeResting)
+                    Integer.parseInt(timeResting))
             );
 
-            new Thread(hospede).start();
+            hospedes.get(hospedes.size()-1).start();
             secondaryStage.close();
         });
         layout.getChildren().addAll(idLabel, idTextField, channelLabel, channelTextField, timeLabel, timeWatchingTextField, timeRestingLabel, timeRestingTextField , createHospedeButton);

@@ -1,17 +1,12 @@
 package adapters;
 
-import javafx.scene.Node;
-import javafx.scene.shape.Circle;
+import com.example.televisionproblem.HelloApplication;
 
 import java.util.concurrent.Semaphore;
 import java.util.Random;
 
 // Classe Hospede
 public class Hospede extends Thread {
-    private static final int MAX_HOSPEDES_NA_TV = 3;
-    private static final Semaphore tvSemaphore = new Semaphore(MAX_HOSPEDES_NA_TV);
-    private static int canalAtual = -1;
-    private static int espectadoresAssistindo = 0;
     private int id;
     private int canalFavorito;
     private int tempoAssistindoTv;
@@ -26,77 +21,69 @@ public class Hospede extends Thread {
     }
 
     // Método que simula o hóspede assistindo TV
-    public void assistirTv() {
+    public void assistir() {
         boolean conseguiuAssistir = false;
+
         while (!conseguiuAssistir) {
             synchronized (Hospede.class) {
-                if (espectadoresAssistindo == 0 || canalAtual == canalFavorito) {
-                    try {
-                        tvSemaphore.acquire();
-                        espectadoresAssistindo++;
-                        canalAtual = canalFavorito;
-                        System.out.println(id + " ligou a TV no canal " + canalAtual + " e está assistindo por " + tempoAssistindoTv + " segundos.");
-                        conseguiuAssistir = true;
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
+                // Se não há ninguém assistindo ou se o canal atual é o favorito, ele pode assistir
+                if (HelloApplication.mostraQtdEspectadores() == 0 || HelloApplication.mostraCanalAtual() == canalFavorito) {
+                    HelloApplication.reservaTv(); // Adquire acesso à TV
+                    HelloApplication.incrementaEspectador();
+                    HelloApplication.atualizaCanalAtual(canalFavorito);
+                    System.out.println(id + " ligou a TV no canal " + HelloApplication.mostraCanalAtual() + " e está assistindo por " + tempoAssistindoTv + " segundos.");
+                    conseguiuAssistir = true;
                 } else {
-
-                    System.out.println(id + " está esperando que a TV fique disponível para mudar para o canal " + canalFavorito + ".");
-                    try {
-                        Hospede.class.wait();
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
+                    // Se não puder assistir, o hóspede decide ir fazer outra coisa
+                    System.out.println(id + " verificou que a TV está ocupada. Vai fazer outra coisa...");
                 }
+            }
+
+            if (!conseguiuAssistir) {
+                descansando();
             }
         }
 
-
         try {
-            Thread.sleep(tempoAssistindoTv * 1000);
+            Thread.sleep(tempoAssistindoTv * 1000); // Hóspede assiste TV
         } catch (InterruptedException e) {
             e.printStackTrace();
         } finally {
-
             synchronized (Hospede.class) {
-                espectadoresAssistindo--;
-                if (espectadoresAssistindo == 0) {
+                // Quando o hóspede termina de assistir
+                HelloApplication.decrementaEspectador();
+                if (HelloApplication.mostraQtdEspectadores() == 0) {
                     System.out.println(id + " foi o último a sair da TV. TV desligada.");
-                    canalAtual = -1;
-                    tvSemaphore.release();
-                    Hospede.class.notifyAll();
+                    HelloApplication.atualizaCanalAtual(-1);
+                    HelloApplication.liberaTv();
+                    Hospede.class.notifyAll(); // Notifica todos que a TV foi liberada
                 } else {
-                    System.out.println(id + " parou de assistir TV. Ainda há " + espectadoresAssistindo + " pessoa(s) assistindo.");
+                    System.out.println(id + " parou de assistir TV. Ainda há " + HelloApplication.mostraQtdEspectadores() + " pessoa(s) assistindo.");
                 }
             }
         }
     }
 
+    private String escolherOutraAtividade() {
+        String[] atividades = {"jogando xadrez", "jogando bola", "lendo", "bebendo água"};
+        return atividades[random.nextInt(atividades.length)];
+    }
 
-    public void descansar() {
+    public void descansando() {
         try {
             String atividade = escolherOutraAtividade();
             System.out.println(id + " está " + atividade + " por " + tempoDescansando + " segundos.");
-            Thread.sleep(tempoDescansando * 1000);
+            Thread.sleep(tempoDescansando * 1000); // O hóspede "descansa"
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
     }
-
-
-    private String escolherOutraAtividade() {
-        String[] atividades = {"descansando", "jogando bola", "lendo", "fazendo um passeio"};
-        return atividades[random.nextInt(atividades.length)];
-    }
-
 
     @Override
     public void run() {
         while (true) {
-            descansar();
-            assistirTv();
+            assistir();
+            descansando();
         }
     }
-
 }
