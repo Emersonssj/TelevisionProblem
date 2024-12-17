@@ -23,21 +23,15 @@ public class Hospede extends Thread {
     // Método que simula o hóspede assistindo TV
     public void assistir() {
         boolean conseguiuAssistir = false;
-
         while (!conseguiuAssistir) {
             synchronized (Hospede.class) {
-                // Se não há ninguém assistindo ou se o canal atual é o favorito, ele pode assistir
                 if (HelloApplication.mostraQtdEspectadores() == 0 || HelloApplication.mostraCanalAtual() == canalFavorito) {
-                    HelloApplication.reservaTv(); // Adquire acesso à TV
+                    HelloApplication.reservaTv();
                     HelloApplication.incrementaEspectador();
                     HelloApplication.atualizaCanalAtual(canalFavorito);
                     System.out.println(id + " ligou a TV no canal " + HelloApplication.mostraCanalAtual() + " e está assistindo por " + tempoAssistindoTv + " segundos.");
                     conseguiuAssistir = true;
-
-                    // Depois que terminar de assistir, matar a thread, pois ja viu o seu programa favotiro
-
                 } else {
-                    // Se não puder assistir, o hóspede decide ir fazer outra coisa
                     System.out.println(id + " verificou que não está passando o canal que ele gosta e foi dormir");
                     try {
                         Hospede.class.wait();
@@ -52,22 +46,21 @@ public class Hospede extends Thread {
             }
         }
 
-        try {
-            Thread.sleep(tempoAssistindoTv * 1000); // Hóspede assiste TV
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        } finally {
-            synchronized (Hospede.class) {
-                // Quando o hóspede termina de assistir
-                HelloApplication.decrementaEspectador();
-                if (HelloApplication.mostraQtdEspectadores() == 0) {
-                    System.out.println(id + " foi o último a sair da TV. TV desligada.");
-                    HelloApplication.atualizaCanalAtual(-1);
-                    HelloApplication.liberaTv();
-                    Hospede.class.notifyAll(); // Notifica todos que a TV foi liberada
-                } else {
-                    System.out.println(id + " parou de assistir TV. Ainda há " + HelloApplication.mostraQtdEspectadores() + " pessoa(s) assistindo.");
-                }
+        // Controle de tempo sem usar sleep
+        long inicio = System.currentTimeMillis();
+        while (System.currentTimeMillis() - inicio < tempoAssistindoTv * 1000) {
+            Thread.yield(); // Cede o controle da CPU para evitar busy-waiting
+        }
+
+        synchronized (Hospede.class) {
+            HelloApplication.decrementaEspectador();
+            if (HelloApplication.mostraQtdEspectadores() == 0) {
+                System.out.println(id + " foi o último a sair da TV. TV desligada.");
+                HelloApplication.atualizaCanalAtual(-1);
+                HelloApplication.liberaTv();
+                Hospede.class.notifyAll();
+            } else {
+                System.out.println(id + " parou de assistir TV. Ainda há " + HelloApplication.mostraQtdEspectadores() + " pessoa(s) assistindo.");
             }
         }
     }
@@ -78,12 +71,13 @@ public class Hospede extends Thread {
     }
 
     public void descansando() {
-        try {
-            String atividade = escolherOutraAtividade();
-            System.out.println(id + " está " + atividade + " por " + tempoDescansando + " segundos.");
-            Thread.sleep(tempoDescansando * 1000); // O hóspede "descansa"
-        } catch (InterruptedException e) {
-            e.printStackTrace();
+        String atividade = escolherOutraAtividade();
+        System.out.println(id + " está " + atividade + " por " + tempoDescansando + " segundos.");
+
+        // Controle de tempo
+        long inicio = System.currentTimeMillis();
+        while (System.currentTimeMillis() - inicio < tempoDescansando * 1000) {
+            Thread.yield(); // Cede o controle da CPU para evitar busy-waiting
         }
     }
 
