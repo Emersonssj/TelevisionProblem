@@ -23,6 +23,7 @@ public class HelloApplication extends Application {
     public static int espectadoresAssistindo = 0;
 
     List<Hospede> hospedes = new ArrayList<>();
+
     public static void incrementaEspectador(){
         espectadoresAssistindo++;
     }

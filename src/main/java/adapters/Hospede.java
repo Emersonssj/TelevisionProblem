@@ -33,9 +33,17 @@ public class Hospede extends Thread {
                     HelloApplication.atualizaCanalAtual(canalFavorito);
                     System.out.println(id + " ligou a TV no canal " + HelloApplication.mostraCanalAtual() + " e está assistindo por " + tempoAssistindoTv + " segundos.");
                     conseguiuAssistir = true;
+
+                    // Depois que terminar de assistir, matar a thread, pois ja viu o seu programa favotiro
+
                 } else {
                     // Se não puder assistir, o hóspede decide ir fazer outra coisa
-                    System.out.println(id + " verificou que a TV está ocupada. Vai fazer outra coisa...");
+                    System.out.println(id + " verificou que não está passando o canal que ele gosta e foi dormir");
+                    try {
+                        Hospede.class.wait();
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
                 }
             }
 
