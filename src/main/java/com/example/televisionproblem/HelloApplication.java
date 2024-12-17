@@ -1,10 +1,13 @@
 package com.example.televisionproblem;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.Semaphore;
 
 import adapters.Hospede;
 import javafx.collections.FXCollections;
 import javafx.application.Application;
 import javafx.collections.ObservableList;
+import javafx.geometry.Insets;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
@@ -15,16 +18,80 @@ import javafx.stage.Modality;
 import javafx.stage.Stage;
 
 public class HelloApplication extends Application {
-    public static final Semaphore mutex = new Semaphore(1);
-    public static final Semaphore changeChannel = new Semaphore(0);
-    public static int currentChannel = 0;
-    public static int currentWatchers = 0;
+    public static final int MAX_HOSPEDES_NA_TV = 3;
+    public static final Semaphore tvSemaphore = new Semaphore(MAX_HOSPEDES_NA_TV);
+    public static int canalAtual = -1;
+    public static int espectadoresAssistindo = 0;
+
+    List<Hospede> hospedes = new ArrayList<>();
+    List<Circle> hospedesDraw = new ArrayList<>();
+
+    public static void incrementaEspectador(){
+        espectadoresAssistindo++;
+    }
+
+    public static  void decrementaEspectador(){
+        espectadoresAssistindo--;
+    }
+
+    public static int mostraQtdEspectadores(){
+        return espectadoresAssistindo;
+    }
+
+    public static void atualizaCanalAtual(int novoValor){
+        canalAtual = novoValor;
+    }
+
+    public static int mostraCanalAtual(){
+        return canalAtual;
+    }
+
+    public static void reservaTv(){
+        try {
+            tvSemaphore.acquire(); // Adquire acesso à TV
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void liberaTv(){
+        tvSemaphore.release();
+    }
 
     public static void main(String[] args) {
         launch();
     }
     @Override
-    public void start(Stage stage) {
+    public void start(Stage primaryStage) {
+        // Configuração da primeira tela (janela inicial)
+        Label label = new Label("Insira a quantidade de canais:");
+        TextField numberInput = new TextField();
+        Button proceedButton = new Button("Prosseguir");
+
+        // Layout da primeira tela
+        VBox smallLayout = new VBox(10);
+        smallLayout.setPadding(new Insets(10));
+        smallLayout.getChildren().addAll(label, numberInput, proceedButton);
+
+        // Cena da janela inicial
+        Scene smallScene = new Scene(smallLayout, 250, 150);
+        primaryStage.setTitle("Janela Inicial");
+        primaryStage.setScene(smallScene);
+        primaryStage.show();
+
+        // Ação ao clicar no botão "Prosseguir"
+        proceedButton.setOnAction(event -> {
+            String input = numberInput.getText();
+            if (!input.isEmpty()) {
+                openMainStage(input); // Abrir janela principal
+                primaryStage.close(); // Fecha a janela inicial
+            } else {
+                label.setText("Por favor, insira um número!"); // Mensagem de erro
+            }
+        });
+    }
+
+    private void openMainStage(String number) {
         // Configuração do layout principal
         BorderPane root = new BorderPane();
 
@@ -69,10 +136,12 @@ public class HelloApplication extends Application {
         addHospedeButton.setOnAction(e -> openSecondaryStage(messages, animationPane));
 
         // Configurar a cena
+        Stage mainStage = new Stage();
         Scene scene = new Scene(root, 800, 600);
-        stage.setTitle("Problema da televisão");
-        stage.setScene(scene);
-        stage.show();
+        mainStage.setTitle("Problema da televisão");
+        mainStage.setScene(scene);
+        mainStage.setMaximized(true);
+        mainStage.show();
     }
 
     private void openSecondaryStage(ObservableList<String> messages, Pane animationPane) {
@@ -108,17 +177,15 @@ public class HelloApplication extends Application {
             hospedeCircle.setCenterX(50);
             hospedeCircle.setCenterY(200);
 
-            Hospede hospede = new Hospede(
-                    Integer.parseInt(id),
-                    Integer.parseInt(channel),
-                    Integer.parseInt(timeWatching),
-                    Integer.parseInt(timeResting),
-                    hospedeCircle
+            hospedes.add(new Hospede(
+                            Integer.parseInt(id),
+                            Integer.parseInt(channel),
+                            Integer.parseInt(timeWatching),
+                            Integer.parseInt(timeResting)
+                    )
             );
 
-            animationPane.getChildren().add(hospede.circle);
-
-            new Thread(hospede).start();
+            hospedes.get(hospedes.size()-1).start();
             secondaryStage.close();
         });
         layout.getChildren().addAll(idLabel, idTextField, channelLabel, channelTextField, timeLabel, timeWatchingTextField, timeRestingLabel, timeRestingTextField , createHospedeButton);

@@ -1,92 +1,91 @@
 package adapters;
 
 import com.example.televisionproblem.HelloApplication;
-import javafx.animation.TranslateTransition;
-import javafx.scene.shape.Circle;
-import javafx.util.Duration;
 
-import java.util.Timer;
-import java.util.TimerTask;
+import java.util.concurrent.Semaphore;
+import java.util.Random;
 
+// Classe Hospede
 public class Hospede extends Thread {
-    public int id;
-    public int canal;
-    public int ttv;
-    public int td;
-    public Circle circle;
+    private int id;
+    private int canalFavorito;
+    private int tempoAssistindoTv;
+    private int tempoDescansando;
+    private Random random = new Random();
 
-    public Hospede(int id, int channel, int ttv, int td, Circle circle) {
+    public Hospede(int id, int canalFavorito, int tempoAssistindoTv, int tempoDescansando) {
         this.id = id;
-        this.canal = channel;
-        this.ttv = ttv;
-        this.td = td;
-        this.circle = circle;
+        this.canalFavorito = canalFavorito;
+        this.tempoAssistindoTv = tempoAssistindoTv;
+        this.tempoDescansando = tempoDescansando;
     }
 
-    TimerTask reduceTTV = new TimerTask() {
-        @Override
-        public void run() {
-            ttv--;
-        }
-    };
+    // Método que simula o hóspede assistindo TV
+    public void assistir() {
+        boolean conseguiuAssistir = false;
+        while (!conseguiuAssistir) {
+            synchronized (Hospede.class) {
+                if (HelloApplication.mostraQtdEspectadores() == 0 || HelloApplication.mostraCanalAtual() == canalFavorito) {
+                    HelloApplication.reservaTv();
+                    HelloApplication.incrementaEspectador();
+                    HelloApplication.atualizaCanalAtual(canalFavorito);
+                    System.out.println(id + " ligou a TV no canal " + HelloApplication.mostraCanalAtual() + " e está assistindo por " + tempoAssistindoTv + " segundos.");
+                    conseguiuAssistir = true;
+                } else {
+                    System.out.println(id + " verificou que não está passando o canal que ele gosta e foi dormir");
+                    try {
+                        Hospede.class.wait();
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
 
-    public void watchTV() throws InterruptedException {
-        Timer timer = new Timer();
-        //    public static final Semaphore mutex = new Semaphore(1);
-        //    public static final Semaphore changeChannel = new Semaphore(1);
-        //    public static int currentChannel = 0;
-        //    public static int currentWatchers = 0;
-        // verificar se tv livre;
-        // se tiver assiste, se nao verificar o canal;
-        // se o canal for o msm assistir, se nao bloqueado
-        HelloApplication.mutex.acquire();
-        if (HelloApplication.currentWatchers == 0) {
-            HelloApplication.currentChannel = canal;
-            HelloApplication.currentWatchers++;
-            HelloApplication.mutex.release();
-        }
-        else if (HelloApplication.currentChannel == canal) {
-            HelloApplication.currentWatchers++;
-            HelloApplication.mutex.release();
-        }
-        else {
-            HelloApplication.mutex.release();
-            HelloApplication.changeChannel.acquire();
-            HelloApplication.mutex.acquire();
-            HelloApplication.currentChannel = canal;
-            HelloApplication.currentWatchers++;
-            HelloApplication.mutex.release();
+            if (!conseguiuAssistir) {
+                descansando();
+            }
         }
 
-        // Movendo para a posição inicial para "assistir TV"
-        TranslateTransition moveToWatchTV = new TranslateTransition(Duration.seconds(2), circle);
-        moveToWatchTV.setToX(300);
-        moveToWatchTV.setToY(200);
-        moveToWatchTV.play();
-
-        for(int i = 0; ttv > i;){
-            timer.scheduleAtFixedRate(reduceTTV, 0, 1000);
+        // Controle de tempo sem usar sleep
+        long inicio = System.currentTimeMillis();
+        while (System.currentTimeMillis() - inicio < tempoAssistindoTv * 1000) {
+            Thread.yield(); // Cede o controle da CPU para evitar busy-waiting
         }
 
-        HelloApplication.mutex.acquire();
-        HelloApplication.currentWatchers --;
-        if(HelloApplication.currentWatchers == 0) HelloApplication.changeChannel.release();
-        HelloApplication.mutex.release();
-
-        TranslateTransition moveToFinalPosition = new TranslateTransition(Duration.seconds(2), circle);
-        moveToFinalPosition.setToX(500);
-        moveToFinalPosition.setToY(200);
-        moveToFinalPosition.play();
+        synchronized (Hospede.class) {
+            HelloApplication.decrementaEspectador();
+            if (HelloApplication.mostraQtdEspectadores() == 0) {
+                System.out.println(id + " foi o último a sair da TV. TV desligada.");
+                HelloApplication.atualizaCanalAtual(-1);
+                HelloApplication.liberaTv();
+                Hospede.class.notifyAll();
+            } else {
+                System.out.println(id + " parou de assistir TV. Ainda há " + HelloApplication.mostraQtdEspectadores() + " pessoa(s) assistindo.");
+            }
+        }
     }
 
+    private String escolherOutraAtividade() {
+        String[] atividades = {"jogando xadrez", "jogando bola", "lendo", "bebendo água"};
+        return atividades[random.nextInt(atividades.length)];
+    }
+
+    public void descansando() {
+        String atividade = escolherOutraAtividade();
+        System.out.println(id + " está " + atividade + " por " + tempoDescansando + " segundos.");
+
+        // Controle de tempo
+        long inicio = System.currentTimeMillis();
+        while (System.currentTimeMillis() - inicio < tempoDescansando * 1000) {
+            Thread.yield(); // Cede o controle da CPU para evitar busy-waiting
+        }
+    }
 
     @Override
     public void run() {
-        try {
-            while (true) {
-                watchTV();
-            }
-        } catch (InterruptedException e) {
+        while (true) {
+            assistir();
+            descansando();
         }
     }
 }
