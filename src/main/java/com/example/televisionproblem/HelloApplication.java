@@ -1,6 +1,7 @@
 package com.example.televisionproblem;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.Semaphore;
 import java.util.function.BiFunction;
 
@@ -13,22 +14,21 @@ import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
-import javafx.scene.text.Text;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import widgets.BallWidget;
 import widgets.TVWidget;
 
 public class HelloApplication extends Application {
-    public static final int MAX_HOSPEDES_NA_TV = 3;
-    public static final Semaphore tvSemaphore = new Semaphore(MAX_HOSPEDES_NA_TV);
     public static int canalAtual = -1;
-    public static int espectadoresAssistindo = 0;
+    public static int visualizadores = 0;
+    public static Semaphore controleRemoto = new Semaphore(1);
+
     public static TVWidget tvWidget = new TVWidget();
     public static List<BallWidget> ballWidgets =  new ArrayList<>();
     public static List<Hospede> hospedes = new ArrayList<>();
-    public static BiFunction<Double, Double, Double[]> movement1 = (x, y) -> new Double[]{x + 2, y + 2 * Math.sin(x / 50)};
     public static StackPane centerLayout = new StackPane();
+    public static ObservableList<String> messages = FXCollections.observableArrayList();
 
     public static void removeBallWidgetById(String id) {
         int index = 0;
@@ -42,46 +42,14 @@ public class HelloApplication extends Application {
     }
 
     public static void moveBallById(String id, double x, double y){
-        int index = 0;
+        int index = -1;
         for (int i = 0; i < ballWidgets.size(); i++) {
             BallWidget ball = ballWidgets.get(i);
-            if (ball.getIdd() == id) {
+            if (Objects.equals(ball.id, id)) {
                 index = i;
             }
         }
         ballWidgets.get(index).moveTo(x, y);
-    }
-
-    public static void incrementaEspectador(){
-        espectadoresAssistindo++;
-    }
-
-    public static  void decrementaEspectador(){
-        espectadoresAssistindo--;
-    }
-
-    public static int mostraQtdEspectadores(){
-        return espectadoresAssistindo;
-    }
-
-    public static void atualizaCanalAtual(int novoValor){
-        canalAtual = novoValor;
-    }
-
-    public static int mostraCanalAtual(){
-        return canalAtual;
-    }
-
-    public static void reservaTv(){
-        try {
-            tvSemaphore.acquire(); // Adquire acesso à TV
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-    }
-
-    public static void liberaTv(){
-        tvSemaphore.release();
     }
 
     public static void main(String[] args) {
@@ -109,10 +77,10 @@ public class HelloApplication extends Application {
         proceedButton.setOnAction(event -> {
             String input = numberInput.getText();
             if (!input.isEmpty()) {
-                openMainStage(input); // Abrir janela principal
-                primaryStage.close(); // Fecha a janela inicial
+                openMainStage(input);
+                primaryStage.close();
             } else {
-                label.setText("Por favor, insira um número!"); // Mensagem de erro
+                label.setText("Por favor, insira um número!");
             }
         });
     }
@@ -129,22 +97,9 @@ public class HelloApplication extends Application {
         root.setTop(topMenu);
 
         // Parte direita: Log de mensagens
-        ObservableList<String> messages = FXCollections.observableArrayList();
-        VBox logBox = new VBox(5);
-        logBox.setStyle("-fx-padding: 10; -fx-background-color: #f7f7f7;");
+        ListView<String> logListView = new ListView<>(messages);
 
-        // Vincular mensagens da lista ao logBox
-        messages.addListener((javafx.collections.ListChangeListener.Change<? extends String> change) -> {
-            while (change.next()) {
-                if (change.wasAdded()) {
-                    for (String message : change.getAddedSubList()) {
-                        logBox.getChildren().add(new Text(message));
-                    }
-                }
-            }
-        });
-
-        ScrollPane logScrollPane = new ScrollPane(logBox);
+        ScrollPane logScrollPane = new ScrollPane(logListView);
         logScrollPane.setFitToWidth(true);
         logScrollPane.setPrefWidth(250);
         VBox.setVgrow(logScrollPane, Priority.ALWAYS);
@@ -200,15 +155,20 @@ public class HelloApplication extends Application {
             String timeResting = timeRestingTextField.getText();
 
             hospedes.add(new Hospede(
-                            id,
+                            Integer.parseInt(id),
                             Integer.parseInt(channel),
                             Integer.parseInt(timeWatching),
                             Integer.parseInt(timeResting)
                     )
             );
 
-            BallWidget ball = new BallWidget(id,Color.color(Math.random(), Math.random(), Math.random()), 0, 0);
-            ballWidgets.add(ball); // Adicionar à lista
+            BallWidget ball = new BallWidget(
+                    id,
+                    Color.color(Math.random(),Math.random(),Math.random()),
+                    30,
+                    30
+            );
+            ballWidgets.add(ball);
             centerLayout.getChildren().add(ball);
 
             hospedes.get(hospedes.size()-1).start();
