@@ -1,6 +1,7 @@
 package adapters;
 
 import com.example.televisionproblem.HelloApplication;
+import javafx.application.Platform;
 
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
@@ -23,21 +24,22 @@ public class Hospede extends Thread {
         boolean assistindo = false;
         while (!assistindo) {
             HelloApplication.controleRemoto.acquire(); // Tenta adquirir o controle remoto
-            if (HelloApplication.canalAtual == -1 || HelloApplication.canalAtual == canalPreferido) {
+            if (HelloApplication.canalAtual == 0 || HelloApplication.canalAtual == canalPreferido) {
                 // Se a TV estiver livre ou já no canal preferido, assiste
-                if (HelloApplication.canalAtual == -1) {
+                if (HelloApplication.canalAtual == 0) {
                     HelloApplication.canalAtual = canalPreferido;
-                    HelloApplication.moveBallById(String.valueOf(id), 650, 0);
+                    HelloApplication.moveBallById(String.valueOf(id), 700, 450);
                     HelloApplication.tvWidget.setChannel(canalPreferido);
-                    HelloApplication.messages.add(id + " mudou para o canal " + HelloApplication.canalAtual);
+                    Platform.runLater(() -> {HelloApplication.messages.add(id + " mudou para o canal " + HelloApplication.canalAtual);});
                 } else {
-                    HelloApplication.messages.add(id + " se juntou para ver TV no canal " + HelloApplication.canalAtual);
+                    HelloApplication.moveBallById(String.valueOf(id), 700, 450);
+                    Platform.runLater(() -> {HelloApplication.messages.add(id + " se juntou para ver TV no canal " + HelloApplication.canalAtual);});
                 }
                 HelloApplication.visualizadores++;
-                HelloApplication.controleRemoto.release(); // Libera o controle remoto
+                HelloApplication.controleRemoto.release();
 
                 // Simula tempo assistindo (consome CPU)
-                HelloApplication.messages.add(id + " está assistindo ao canal " + HelloApplication.canalAtual);
+                Platform.runLater(() -> {HelloApplication.messages.add(id + " está assistindo ao canal " + HelloApplication.canalAtual);});
                 long inicioAssistindo = System.currentTimeMillis();
                 while (System.currentTimeMillis() - inicioAssistindo < tempoAssistindo * 1000) {
                     // Simulando o tempo assistindo (gasta CPU)
@@ -47,17 +49,17 @@ public class Hospede extends Thread {
                 HelloApplication.controleRemoto.acquire();
                 HelloApplication.visualizadores--;
                 HelloApplication.moveBallById(String.valueOf(id), 0, 0);
-                HelloApplication.messages.add(id + " terminou de assistir ao canal " + HelloApplication.canalAtual);
+                Platform.runLater(() -> {HelloApplication.messages.add(id + " terminou de assistir ao canal " + canalPreferido);});
                 if (HelloApplication.visualizadores == 0) {
-                    HelloApplication.messages.add("Canal " + HelloApplication.canalAtual + " não está mais sendo assistido.");
+                    Platform.runLater(() -> {HelloApplication.messages.add("Canal " + canalPreferido + " não está mais sendo assistido.");});
                     HelloApplication.tvWidget.setChannel(0);
-                    HelloApplication.canalAtual = -1; // Libera o canal
+                    HelloApplication.canalAtual = 0;
                 }
                 HelloApplication.controleRemoto.release();
                 assistindo = true;
             } else {
-                // Se o canal atual não é o preferido, bloqueia
-                HelloApplication.messages.add(id + " está bloqueado aguardando o canal " + canalPreferido);
+                //HelloApplication.moveBallById(String.valueOf(id), 1200, 450);
+                Platform.runLater(() -> {HelloApplication.messages.add(id + " está bloqueado aguardando o canal " + canalPreferido);});
                 HelloApplication.controleRemoto.release(); // Libera o semáforo para outros
 
                 // Bloqueia por 1 segundo antes de tentar novamente (não consome CPU)
@@ -71,7 +73,7 @@ public class Hospede extends Thread {
     public void descansar() {
         String[] atividades = {"jogando bola", "lendo um livro", "jogando xadrez"};
         String atividade = atividades[(int) (Math.random() * atividades.length)];
-        HelloApplication.messages.add(id + " está " + atividade);
+        Platform.runLater(() -> {HelloApplication.messages.add(id + " está " + atividade);});
 
         // Simula o tempo de descanso (consome CPU)
         long inicioAtividade = System.currentTimeMillis();
@@ -85,11 +87,11 @@ public class Hospede extends Thread {
     public void run() {
         try {
             while (true) {
-                descansar(); // Hóspede descansa (consome CPU)
-                assistirTV(); // Tenta assistir à TV (consome CPU)
+                assistirTV();
+                descansar();
             }
         } catch (InterruptedException e) {
-            HelloApplication.messages.add(id + " foi interrompido.");
+            Platform.runLater(() -> {HelloApplication.messages.add(id + " foi interrompido.");});
         }
     }
 }

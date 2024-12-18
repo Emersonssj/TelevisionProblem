@@ -3,7 +3,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.Semaphore;
-import java.util.function.BiFunction;
 
 import adapters.Hospede;
 import javafx.collections.FXCollections;
@@ -20,7 +19,7 @@ import widgets.BallWidget;
 import widgets.TVWidget;
 
 public class HelloApplication extends Application {
-    public static int canalAtual = -1;
+    public static int canalAtual = 0;
     public static int visualizadores = 0;
     public static Semaphore controleRemoto = new Semaphore(1);
 
