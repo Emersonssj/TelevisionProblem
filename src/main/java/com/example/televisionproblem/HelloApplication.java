@@ -17,44 +17,8 @@ import javafx.stage.Modality;
 import javafx.stage.Stage;
 
 public class HelloApplication extends Application {
-    public static final int MAX_HOSPEDES_NA_TV = 3; // Quantidade máxima de hóspedes assistindo TV ao mesmo tempo
-    public static final Semaphore tvSemaphore = new Semaphore(MAX_HOSPEDES_NA_TV);
-    public static int canalAtual = -1;
-    public static int espectadoresAssistindo = 0;
-
     List<Hospede> hospedes = new ArrayList<>();
 
-    public static void incrementaEspectador(){
-        espectadoresAssistindo++;
-    }
-
-    public static  void decrementaEspectador(){
-        espectadoresAssistindo--;
-    }
-
-    public static int mostraQtdEspectadores(){
-        return espectadoresAssistindo;
-    }
-
-    public static void atualizaCanalAtual(int novoValor){
-        canalAtual = novoValor;
-    }
-
-    public static int mostraCanalAtual(){
-        return canalAtual;
-    }
-
-    public static void reservaTv(){
-        try {
-            tvSemaphore.acquire(); // Adquire acesso à TV
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-    }
-
-    public static void liberaTv(){
-        tvSemaphore.release();
-    }
 
     public static void main(String[] args) {
         launch();
