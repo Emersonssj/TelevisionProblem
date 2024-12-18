@@ -23,7 +23,7 @@ public class TVWidget extends StackPane {
 
         // Adicionar Canvas e Texto ao StackPane
         this.getChildren().addAll(tvCanvas, channelText);
-        this.setAlignment(Pos.CENTER_RIGHT); // Centraliza o texto
+        this.setAlignment(Pos.CENTER);
     }
 
     // Método para desenhar a TV

@@ -1,7 +1,6 @@
 package com.example.televisionproblem;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.concurrent.Semaphore;
 import java.util.function.BiFunction;
 
@@ -10,12 +9,10 @@ import javafx.collections.FXCollections;
 import javafx.application.Application;
 import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
-import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
-import javafx.scene.shape.Circle;
 import javafx.scene.text.Text;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
@@ -34,7 +31,25 @@ public class HelloApplication extends Application {
     public static StackPane centerLayout = new StackPane();
 
     public static void removeBallWidgetById(String id) {
-        ballWidgets.removeIf(item -> Objects.equals(item.getIdd(), id));
+        int index = 0;
+        for (int i = 0; i < ballWidgets.size(); i++) {
+            BallWidget ball = ballWidgets.get(i);
+            if (ball.getIdd() == id) {
+                index = i;
+            }
+        }
+        ballWidgets.remove(index);
+    }
+
+    public static void moveBallById(String id, double x, double y){
+        int index = 0;
+        for (int i = 0; i < ballWidgets.size(); i++) {
+            BallWidget ball = ballWidgets.get(i);
+            if (ball.getIdd() == id) {
+                index = i;
+            }
+        }
+        ballWidgets.get(index).moveTo(x, y);
     }
 
     public static void incrementaEspectador(){
@@ -139,17 +154,16 @@ public class HelloApplication extends Application {
         root.setRight(logArea);
 
         // Parte central: Animação
-        Pane animationPane = new Pane();
-        animationPane.setStyle("-fx-background-color: #ecf0f1;");
-        animationPane.getChildren().addAll(centerLayout, tvWidget);
-        root.setCenter(animationPane);
+        centerLayout.setStyle("-fx-background-color: #ecf0f1;");
+        centerLayout.getChildren().add(tvWidget);
+        root.setCenter(centerLayout);
 
         // Chamar a janela secundária e passar o Pane de animação
-        addHospedeButton.setOnAction(e -> openSecondaryStage(messages, animationPane));
+        addHospedeButton.setOnAction(e -> openSecondaryStage(messages, centerLayout));
 
         // Configurar a cena
         Stage mainStage = new Stage();
-        Scene scene = new Scene(root, 800, 600);
+        Scene scene = new Scene(root);
         mainStage.setTitle("Problema da televisão");
         mainStage.setScene(scene);
         mainStage.setMaximized(true);
@@ -193,7 +207,7 @@ public class HelloApplication extends Application {
                     )
             );
 
-            BallWidget ball = new BallWidget(id,Color.color(Math.random(), Math.random(), Math.random()), 100, 500);
+            BallWidget ball = new BallWidget(id,Color.color(Math.random(), Math.random(), Math.random()), 0, 0);
             ballWidgets.add(ball); // Adicionar à lista
             centerLayout.getChildren().add(ball);
 
