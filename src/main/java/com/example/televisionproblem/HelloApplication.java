@@ -4,9 +4,12 @@ import java.util.List;
 import java.util.concurrent.Semaphore;
 import adapters.Resource;
 import javafx.application.Application;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
+import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.*;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
@@ -18,6 +21,11 @@ public class HelloApplication extends Application {
     public static ArrayList<ArrayList<Semaphore>> arrayC = new ArrayList<>();
     public static ArrayList<ArrayList<Semaphore>> arrayR = new ArrayList<>();
 
+    ObservableList<Resource> data = FXCollections.observableArrayList(
+            new Resource(1, "N", 1),
+            new Resource(1, "N", 1),
+            new Resource(1, "N", 1)
+    );
 
     public static void main(String[] args) {
         launch();
@@ -69,6 +77,25 @@ public class HelloApplication extends Application {
         killResourceButton.setOnAction(e -> addProcessStage());
         topMenu.getChildren().addAll(addResourceButton, killResourceButton);
         root.setTop(topMenu);
+
+        // Configuração da TableView
+        Label labelE = new Label("E");
+        TableView<Resource> tableE = createTable(data);
+        Label labelC = new Label("C");
+        TableView<Resource> tableC = createTable(data);
+        HBox firstRow = new HBox(20);
+        firstRow.getChildren().addAll(labelE, tableE, labelC, tableC);
+
+        Label labelR = new Label("R");
+        TableView<Resource> tableR = createTable(data);
+        Label labelA = new Label("A");
+        TableView<Resource> tableA = createTable(data);
+        HBox secondRow = new HBox(20);
+        secondRow.getChildren().addAll(labelR, tableR, labelA, tableA);
+
+        VBox tablesBox = new VBox(20);
+        tablesBox.getChildren().addAll(firstRow, secondRow);
+        root.setCenter(tablesBox);
 
         // Configurar a cena
         Stage mainStage = new Stage();
@@ -145,6 +172,26 @@ public class HelloApplication extends Application {
         Scene scene = new Scene(layout, 250, 250);
         secondaryStage.setScene(scene);
         secondaryStage.show();
+    }
+
+    private TableView<Resource> createTable(ObservableList<Resource> data) {
+        TableView<Resource> table = new TableView<>();
+        table.setItems(data);
+
+        TableColumn<Resource, String> nameColumn = new TableColumn<>("Name");
+        nameColumn.setCellValueFactory(new PropertyValueFactory<>("name"));
+        nameColumn.setPrefWidth(150);
+
+        TableColumn<Resource, Integer> valueColumn = new TableColumn<>("Value");
+        valueColumn.setCellValueFactory(new PropertyValueFactory<>("value"));
+        valueColumn.setPrefWidth(100);
+
+        table.getColumns().addAll(nameColumn, valueColumn);
+
+        // Ajustar tamanho da tabela para não ocupar toda a tela
+        table.setMaxWidth(250);
+        table.setMaxHeight(250);
+        return table;
     }
 }
 //        Monte o vetor de recursos existentes E;
