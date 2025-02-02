@@ -17,8 +17,8 @@ public class SO extends Thread {
 
         // Inicializar semáforos
         for (int i = 0; i < numResources; i++) {
-            HelloApplication.arrayE.add(new Semaphore(E[i], true)); // Recursos existentes
-            HelloApplication.arrayA.add(new Semaphore(E[i], true)); // Recursos disponíveis
+            HelloApplication.arrayE.add(new Semaphore(E[i], true));
+            HelloApplication.arrayA.add(new Semaphore(E[i], true));
         }
 
         // Inicializar matrizes C e R
@@ -26,8 +26,8 @@ public class SO extends Thread {
             ArrayList<Semaphore> rowC = new ArrayList<>();
             ArrayList<Semaphore> rowR = new ArrayList<>();
             for (int j = 0; j < numResources; j++) {
-                rowC.add(new Semaphore(0, true)); // Inicialmente, nenhum recurso alocado
-                rowR.add(new Semaphore(0, true)); // Inicialmente, nenhuma requisição
+                rowC.add(new Semaphore(0, true));
+                rowR.add(new Semaphore(0, true));
             }
             HelloApplication.arrayC.add(rowC);
             HelloApplication.arrayR.add(rowR);
@@ -40,7 +40,6 @@ public class SO extends Thread {
             HelloApplication.arrayE.add(new Semaphore(totalInstances));
             HelloApplication.arrayA.add(new Semaphore(totalInstances));
 
-            // Expande as matrizes C e R para incluir o novo recurso
             for (int i = 0; i < numProcesses; i++) {
                 HelloApplication.arrayC.get(i).add(new Semaphore(0));
                 HelloApplication.arrayR.get(i).add(new Semaphore(0));
@@ -53,7 +52,6 @@ public class SO extends Thread {
         }
     }
 
-    // Método para adicionar um novo processo
     public int addProcess() {
         int newProcessId = numProcesses;
 
@@ -75,8 +73,8 @@ public class SO extends Thread {
     public void setRequest(int processId, int[] request) {
         try {
             for (int j = 0; j < numResources; j++) {
-                HelloApplication.arrayR.get(processId).get(j).acquire(); // Bloqueia o recurso
-                HelloApplication.arrayR.get(processId).get(j).release(request[j]); // Define a requisição
+                HelloApplication.arrayR.get(processId).get(j).acquire();
+                HelloApplication.arrayR.get(processId).get(j).release(request[j]);
             }
         } catch (InterruptedException e) {
             e.printStackTrace();
@@ -86,7 +84,6 @@ public class SO extends Thread {
 
     public boolean requestResources(int processId, int[] request) {
         try {
-            // Verifica se há recursos suficientes disponíveis
             for (int j = 0; j < numResources; j++) {
                 if (request[j] > HelloApplication.arrayA.get(j).availablePermits()) {
                     return false;
