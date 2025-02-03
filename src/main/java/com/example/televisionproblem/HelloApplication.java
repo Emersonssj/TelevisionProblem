@@ -45,7 +45,7 @@ public class HelloApplication extends Application {
     // Número de recursos (atualizado a cada atualização, mas pode ser obtido via so.getE().length)
     private int numResources = 0;
 
-    // Semáforos para gerenciar as variáveis E, A, C e R
+    // Semáforos para gerenciar o acesso às variáveis compartilhadas
     public static List<Semaphore> arrayE = new ArrayList<>();
     public static List<Semaphore> arrayA = new ArrayList<>();
     public static ArrayList<ArrayList<Semaphore>> arrayC = new ArrayList<>();
@@ -299,7 +299,6 @@ public class HelloApplication extends Application {
                     int newProcessId = so.addProcess();
                     processNames.add(novoProcName);
 
-                    // Cria o processo passando também o nome para a exibição nas mensagens internas
                     Process novoProcesso = new Process(newProcessId, novoProcName, requestIntervalTime, utilizationTime, so);
                     novoProcesso.start();
 
@@ -314,7 +313,7 @@ public class HelloApplication extends Application {
         });
     }
 
-    // Atualiza as colunas dinâmicas das tabelas de matrizes caso o número de recursos tenha mudado
+    // Atualiza as colunas dinâmicas das tabelas de matrizes caso o número de recursos tenha mudadom
     private void updateMatrixColumns() {
         // Atualiza as colunas da matriz de alocação
         matrixCTable.getColumns().clear();
@@ -342,12 +341,10 @@ public class HelloApplication extends Application {
 
     // Atualiza todas as tabelas com os dados atuais do SO
     private void updateTables() {
-        // Atualiza a tabela de recursos
         ObservableList<ResourceRow> resourceRows = FXCollections.observableArrayList();
         int[] E = so.getE();
         int[] A = so.getA();
         for (int i = 0; i < E.length; i++) {
-            // Se houver informação no resourceData, utiliza o nome do recurso; caso contrário, usa um índice padrão
             String nome = (i < resourceData.size()) ? resourceData.get(i).getName() : "R" + (i+1);
             resourceRows.add(new ResourceRow(nome, E[i], A[i]));
         }
@@ -358,7 +355,7 @@ public class HelloApplication extends Application {
         int[][] C = so.getC();
         for (int i = 0; i < C.length; i++) {
             ObservableList<String> row = FXCollections.observableArrayList();
-            // A primeira célula é o nome do processo
+            // A primeira célula é o nome do processo ( preciso lembrar disso)
             String procName = (i < processNames.size()) ? processNames.get(i) : "P" + i;
             row.add(procName);
             for (int j = 0; j < C[i].length; j++) {

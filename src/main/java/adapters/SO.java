@@ -1,160 +1,75 @@
 package adapters;
 
-import com.example.televisionproblem.HelloApplication;
-
-import java.util.ArrayList;
-import java.util.concurrent.Semaphore;
+import java.util.Arrays;
 
 public class SO extends Thread {
-    private int timeDuration;
+    private int timeDuration; // Pode ser utilizado para controle de execução (não usado aqui)
+
+    // Gerenciamento de recursos:
+    private int[] E; // Vetor dos recursos existentes (total de instâncias)
+    private int[] A; // Vetor dos recursos disponíveis
+    private int[][] C; // Matriz de alocação: C[i][j] = quantidade do recurso j alocado para o processo  (talvez eu tenha que mudar)i
+    private int[][] R; // Matriz de requisição: R[i][j] = quantidade do recurso j requisitado pelo processo (talvez eu tenha que mudar isso) i
+
+    // Controle do número de processos e recursos
     private int numProcesses;
     private int numResources;
 
     public SO(int timeDuration, int[] E, int numProcesses) {
         this.timeDuration = timeDuration;
+        this.E = Arrays.copyOf(E, E.length);
+        this.A = Arrays.copyOf(E, E.length); // inicialmente, todos os recursos estão disponíveis
         this.numResources = E.length;
         this.numProcesses = numProcesses;
-
-        // Inicializar semáforos
-        for (int i = 0; i < numResources; i++) {
-            HelloApplication.arrayE.add(new Semaphore(E[i], true));
-            HelloApplication.arrayA.add(new Semaphore(E[i], true));
-        }
-
-        // Inicializar matrizes C e R
-        for (int i = 0; i < numProcesses; i++) {
-            ArrayList<Semaphore> rowC = new ArrayList<>();
-            ArrayList<Semaphore> rowR = new ArrayList<>();
-            for (int j = 0; j < numResources; j++) {
-                rowC.add(new Semaphore(0, true));
-                rowR.add(new Semaphore(0, true));
-            }
-            HelloApplication.arrayC.add(rowC);
-            HelloApplication.arrayR.add(rowR);
-        }
+        this.C = new int[numProcesses][numResources];
+        this.R = new int[numProcesses][numResources];
     }
-
-    // Método para adicionar um novo recurso
-    public void addResource(int totalInstances) {
-        try {
-            HelloApplication.arrayE.add(new Semaphore(totalInstances));
-            HelloApplication.arrayA.add(new Semaphore(totalInstances));
-
-            for (int i = 0; i < numProcesses; i++) {
-                HelloApplication.arrayC.get(i).add(new Semaphore(0));
-                HelloApplication.arrayR.get(i).add(new Semaphore(0));
-            }
-
-            numResources++;
-            System.out.println("Novo recurso adicionado. Total de recursos agora: " + numResources);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
-    public int addProcess() {
-        int newProcessId = numProcesses;
-
-        ArrayList<Semaphore> newCRow = new ArrayList<>();
-        ArrayList<Semaphore> newRRow = new ArrayList<>();
-        for (int j = 0; j < numResources; j++) {
-            newCRow.add(new Semaphore(0));
-            newRRow.add(new Semaphore(0));
-        }
-        HelloApplication.arrayC.add(newCRow);
-        HelloApplication.arrayR.add(newRRow);
-
-        numProcesses++;
-        System.out.println("Novo processo adicionado. Total de processos agora: " + numProcesses);
-        return newProcessId;
-    }
-
 
     public void setRequest(int processId, int[] request) {
-        try {
-            for (int j = 0; j < numResources; j++) {
-                HelloApplication.arrayR.get(processId).get(j).acquire();
-                HelloApplication.arrayR.get(processId).get(j).release(request[j]);
-            }
-        } catch (InterruptedException e) {
-            e.printStackTrace();
+        if (processId < R.length) {
+            R[processId] = Arrays.copyOf(request, numResources);
         }
     }
-
 
     public boolean requestResources(int processId, int[] request) {
-        try {
-            for (int j = 0; j < numResources; j++) {
-                if (request[j] > HelloApplication.arrayA.get(j).availablePermits()) {
-                    return false;
-                }
+        for (int j = 0; j < numResources; j++) {
+            if (request[j] > A[j]) {
+                return false;
             }
-
-            for (int j = 0; j < numResources; j++) {
-                HelloApplication.arrayA.get(j).acquire(request[j]); // Reduz os recursos disponíveis
-                HelloApplication.arrayC.get(processId).get(j).release(request[j]); // Aloca para o processo
-                HelloApplication.arrayR.get(processId).get(j).acquire(request[j]); // Remove a requisição
-            }
-            return true;
-
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-            return false;
         }
+        for (int j = 0; j < numResources; j++) {
+            A[j] -= request[j];
+            C[processId][j] += request[j];
+            R[processId][j] = 0;
+        }
+        return true;
     }
 
-
     public void releaseResources(int processId) {
-        try {
-            for (int j = 0; j < numResources; j++) {
-                int allocated = HelloApplication.arrayC.get(processId).get(j).availablePermits();
-                HelloApplication.arrayC.get(processId).get(j).acquire(allocated); // Remove a alocação
-                HelloApplication.arrayA.get(j).release(allocated); // Devolve aos recursos disponíveis
-            }
-        } catch (InterruptedException e) {
-            e.printStackTrace();
+        for (int j = 0; j < numResources; j++) {
+            A[j] += C[processId][j];
+            C[processId][j] = 0;
         }
     }
 
     public boolean detectDeadlock() {
         boolean[] finish = new boolean[numProcesses];
-        int[] work = new int[numResources];
-        try {
-            for (int j = 0; j < numResources; j++) {
-                HelloApplication.arrayA.get(j).acquire();
-                work[j] = HelloApplication.arrayA.get(j).availablePermits();
-                HelloApplication.arrayA.get(j).release();
-            }
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-
+        int[] work = Arrays.copyOf(A, numResources);
         boolean progress;
         do {
             progress = false;
             for (int i = 0; i < numProcesses; i++) {
                 if (!finish[i]) {
                     boolean canFinish = true;
-                    try {
-                        for (int j = 0; j < numResources; j++) {
-                            HelloApplication.arrayR.get(i).get(j).acquire();
-                            if (HelloApplication.arrayR.get(i).get(j).availablePermits() > work[j]) {
-                                canFinish = false;
-                            }
-                            HelloApplication.arrayR.get(i).get(j).release();
+                    for (int j = 0; j < numResources; j++) {
+                        if (R[i][j] > work[j]) {
+                            canFinish = false;
+                            break;
                         }
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
                     }
                     if (canFinish) {
-                        try {
-                            for (int j = 0; j < numResources; j++) {
-                                HelloApplication.arrayC.get(i).get(j).acquire();
-                                work[j] += HelloApplication.arrayC.get(i).get(j).availablePermits();
-                                HelloApplication.arrayC.get(i).get(j).release();
-                            }
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
+                        for (int j = 0; j < numResources; j++) {
+                            work[j] += C[i][j];
                         }
                         finish[i] = true;
                         progress = true;
@@ -162,7 +77,6 @@ public class SO extends Thread {
                 }
             }
         } while (progress);
-
         for (boolean f : finish) {
             if (!f) {
                 return true;
@@ -171,44 +85,56 @@ public class SO extends Thread {
         return false;
     }
 
-
-    public int[] getE() {
-        int[] E = new int[numResources];
-        for (int i = 0; i < numResources; i++) {
-            E[i] = HelloApplication.arrayE.get(i).availablePermits();
+    // Método para adicionar um novo recurso (expande os arrays e atualiza as matrizes)
+    public void addResource(int totalInstances) {
+        int newNumResources = numResources + 1;
+        int[] newE = new int[newNumResources];
+        int[] newA = new int[newNumResources];
+        for (int j = 0; j < numResources; j++) {
+            newE[j] = E[j];
+            newA[j] = A[j];
         }
-        return E;
-    }
-
-
-    public int[] getA() {
-        int[] A = new int[numResources];
-        for (int i = 0; i < numResources; i++) {
-            A[i] = HelloApplication.arrayA.get(i).availablePermits();
-        }
-        return A;
-    }
-
-
-    public int[][] getC() {
-        int[][] C = new int[numProcesses][numResources];
+        newE[newNumResources - 1] = totalInstances;
+        newA[newNumResources - 1] = totalInstances;
+        E = newE;
+        A = newA;
         for (int i = 0; i < numProcesses; i++) {
+            int[] newCRow = new int[newNumResources];
+            int[] newRRow = new int[newNumResources];
             for (int j = 0; j < numResources; j++) {
-                C[i][j] = HelloApplication.arrayC.get(i).get(j).availablePermits();
+                newCRow[j] = C[i][j];
+                newRRow[j] = R[i][j];
             }
+            C[i] = newCRow;
+            R[i] = newRRow;
         }
-        return C;
+        numResources = newNumResources;
+        System.out.println("Novo recurso adicionado. Total de recursos agora: " + numResources);
     }
 
-    public int[][] getR() {
-        int[][] R = new int[numProcesses][numResources];
+    // Método para adicionar um novo processo (expande as matrizes e retorna o novo id)
+    public int addProcess() {
+        int newProcessId = numProcesses;
+        int newNumProcesses = numProcesses + 1;
+        int[][] newC = new int[newNumProcesses][numResources];
+        int[][] newR = new int[newNumProcesses][numResources];
         for (int i = 0; i < numProcesses; i++) {
-            for (int j = 0; j < numResources; j++) {
-                R[i][j] = HelloApplication.arrayR.get(i).get(j).availablePermits();
-            }
+            newC[i] = C[i];
+            newR[i] = R[i];
         }
-        return R;
+        newC[newProcessId] = new int[numResources];
+        newR[newProcessId] = new int[numResources];
+        C = newC;
+        R = newR;
+        numProcesses = newNumProcesses;
+        System.out.println("Novo processo adicionado. Total de processos agora: " + numProcesses);
+        return newProcessId;
     }
+
+    public int[] getE() { return Arrays.copyOf(E, numResources); }
+    public int[] getA() { return Arrays.copyOf(A, numResources); }
+    public int[][] getC() { return C; }
+    public int[][] getR() { return R; }
 
     @Override
     public void run() {
@@ -222,7 +148,7 @@ public class SO extends Thread {
                 }
             }
         } catch (InterruptedException e) {
-            System.out.println("Eu preciso tratar o erro aqui");
+            // tratamento, se necessário
         }
     }
 }
