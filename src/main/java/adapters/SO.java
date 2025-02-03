@@ -1,140 +1,134 @@
 package adapters;
 
-import java.util.Arrays;
+import com.example.televisionproblem.HelloApplication;
+
+import java.util.concurrent.Semaphore;
+import java.util.List;
 
 public class SO extends Thread {
     private int timeDuration; // Pode ser utilizado para controle de execução (não usado aqui)
-
-    // Gerenciamento de recursos:
-    private int[] E; // Vetor dos recursos existentes (total de instâncias)
-    private int[] A; // Vetor dos recursos disponíveis
-    private int[][] C; // Matriz de alocação: C[i][j] = quantidade do recurso j alocado para o processo  (talvez eu tenha que mudar)i
-    private int[][] R; // Matriz de requisição: R[i][j] = quantidade do recurso j requisitado pelo processo (talvez eu tenha que mudar isso) i
 
     // Controle do número de processos e recursos
     private int numProcesses;
     private int numResources;
 
-    public SO(int timeDuration, int[] E, int numProcesses) {
+    public SO(int timeDuration, int numProcesses) {
         this.timeDuration = timeDuration;
-        this.E = Arrays.copyOf(E, E.length);
-        this.A = Arrays.copyOf(E, E.length); // inicialmente, todos os recursos estão disponíveis
-        this.numResources = E.length;
+        this.numResources = HelloApplication.arrayE.size();
         this.numProcesses = numProcesses;
-        this.C = new int[numProcesses][numResources];
-        this.R = new int[numProcesses][numResources];
     }
 
     public void setRequest(int processId, int[] request) {
-        if (processId < R.length) {
-            R[processId] = Arrays.copyOf(request, numResources);
+        if (processId < HelloApplication.arrayR.size()) {
+            try {
+                // Bloqueando o acesso ao vetor R enquanto a requisição é atualizada
+                for (int j = 0; j < numResources; j++) {
+                    HelloApplication.arrayR.get(processId).get(j).acquire();
+                    HelloApplication.arrayR.get(processId).set(j, new Semaphore(request[j])); // Atualiza o recurso solicitado
+                    HelloApplication.arrayR.get(processId).get(j).release();
+                }
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
         }
     }
 
     public boolean requestResources(int processId, int[] request) {
-        for (int j = 0; j < numResources; j++) {
-            if (request[j] > A[j]) {
-                return false;
+        try {
+            // Verifica se os recursos estão disponíveis
+            for (int j = 0; j < numResources; j++) {
+                HelloApplication.arrayA.get(j).acquire(); // Acessa semáforo dos recursos disponíveis
+                if (request[j] > HelloApplication.arrayA.get(j).availablePermits()) {
+                    // Se não houver recursos suficientes, libera os semáforos já adquiridos e retorna false
+                    for (int k = 0; k < j; k++) {
+                        HelloApplication.arrayA.get(k).release();
+                    }
+                    return false;
+                }
             }
+
+            // Se os recursos estiverem disponíveis, faz a alocação
+            for (int j = 0; j < numResources; j++) {
+                HelloApplication.arrayA.get(j).acquire(request[j]); // Reduz os recursos disponíveis
+                HelloApplication.arrayC.get(processId).get(j).acquire();
+                HelloApplication.arrayC.get(processId).set(j, new Semaphore(request[j])); // Atualiza a alocação
+                HelloApplication.arrayC.get(processId).get(j).release();
+                HelloApplication.arrayR.get(processId).get(j).acquire();
+                HelloApplication.arrayR.get(processId).set(j, new Semaphore(0)); // Reseta a requisição
+                HelloApplication.arrayR.get(processId).get(j).release();
+            }
+
+            return true;
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+            return false;
         }
-        for (int j = 0; j < numResources; j++) {
-            A[j] -= request[j];
-            C[processId][j] += request[j];
-            R[processId][j] = 0;
-        }
-        return true;
     }
 
     public void releaseResources(int processId) {
-        for (int j = 0; j < numResources; j++) {
-            A[j] += C[processId][j];
-            C[processId][j] = 0;
+        try {
+            for (int j = 0; j < numResources; j++) {
+                HelloApplication.arrayC.get(processId).get(j).acquire();
+                int allocated = HelloApplication.arrayC.get(processId).get(j).availablePermits();
+                HelloApplication.arrayC.get(processId).set(j, new Semaphore(0)); // Libera os recursos alocados
+                HelloApplication.arrayC.get(processId).get(j).release();
+                HelloApplication.arrayA.get(j).release(allocated); // Devolve os recursos ao total disponível
+            }
+        } catch (InterruptedException e) {
+            e.printStackTrace();
         }
     }
 
     public boolean detectDeadlock() {
         boolean[] finish = new boolean[numProcesses];
-        int[] work = Arrays.copyOf(A, numResources);
-        boolean progress;
-        do {
-            progress = false;
-            for (int i = 0; i < numProcesses; i++) {
-                if (!finish[i]) {
-                    boolean canFinish = true;
-                    for (int j = 0; j < numResources; j++) {
-                        if (R[i][j] > work[j]) {
-                            canFinish = false;
-                            break;
-                        }
-                    }
-                    if (canFinish) {
+        int[] work = new int[numResources];
+
+        // Inicializa o vetor work com os recursos disponíveis (arrayA)
+        try {
+            for (int j = 0; j < numResources; j++) {
+                HelloApplication.arrayA.get(j).acquire();
+                work[j] = HelloApplication.arrayA.get(j).availablePermits();
+                HelloApplication.arrayA.get(j).release();
+            }
+
+            boolean progress;
+            do {
+                progress = false;
+                for (int i = 0; i < numProcesses; i++) {
+                    if (!finish[i]) {
+                        boolean canFinish = true;
                         for (int j = 0; j < numResources; j++) {
-                            work[j] += C[i][j];
+                            HelloApplication.arrayR.get(i).get(j).acquire();
+                            if (HelloApplication.arrayR.get(i).get(j).availablePermits() > work[j]) {
+                                canFinish = false;
+                            }
+                            HelloApplication.arrayR.get(i).get(j).release();
                         }
-                        finish[i] = true;
-                        progress = true;
+
+                        if (canFinish) {
+                            for (int j = 0; j < numResources; j++) {
+                                HelloApplication.arrayC.get(i).get(j).acquire();
+                                work[j] += HelloApplication.arrayC.get(i).get(j).availablePermits(); // Libera os recursos
+                                HelloApplication.arrayC.get(i).get(j).release();
+                            }
+                            finish[i] = true;
+                            progress = true;
+                        }
                     }
                 }
+            } while (progress);
+
+            for (boolean f : finish) {
+                if (!f) {
+                    return true; // Deadlock detectado
+                }
             }
-        } while (progress);
-        for (boolean f : finish) {
-            if (!f) {
-                return true;
-            }
+        } catch (InterruptedException e) {
+            e.printStackTrace();
         }
+
         return false;
     }
-
-    // Método para adicionar um novo recurso (expande os arrays e atualiza as matrizes)
-    public void addResource(int totalInstances) {
-        int newNumResources = numResources + 1;
-        int[] newE = new int[newNumResources];
-        int[] newA = new int[newNumResources];
-        for (int j = 0; j < numResources; j++) {
-            newE[j] = E[j];
-            newA[j] = A[j];
-        }
-        newE[newNumResources - 1] = totalInstances;
-        newA[newNumResources - 1] = totalInstances;
-        E = newE;
-        A = newA;
-        for (int i = 0; i < numProcesses; i++) {
-            int[] newCRow = new int[newNumResources];
-            int[] newRRow = new int[newNumResources];
-            for (int j = 0; j < numResources; j++) {
-                newCRow[j] = C[i][j];
-                newRRow[j] = R[i][j];
-            }
-            C[i] = newCRow;
-            R[i] = newRRow;
-        }
-        numResources = newNumResources;
-        System.out.println("Novo recurso adicionado. Total de recursos agora: " + numResources);
-    }
-
-    // Método para adicionar um novo processo (expande as matrizes e retorna o novo id)
-    public int addProcess() {
-        int newProcessId = numProcesses;
-        int newNumProcesses = numProcesses + 1;
-        int[][] newC = new int[newNumProcesses][numResources];
-        int[][] newR = new int[newNumProcesses][numResources];
-        for (int i = 0; i < numProcesses; i++) {
-            newC[i] = C[i];
-            newR[i] = R[i];
-        }
-        newC[newProcessId] = new int[numResources];
-        newR[newProcessId] = new int[numResources];
-        C = newC;
-        R = newR;
-        numProcesses = newNumProcesses;
-        System.out.println("Novo processo adicionado. Total de processos agora: " + numProcesses);
-        return newProcessId;
-    }
-
-    public int[] getE() { return Arrays.copyOf(E, numResources); }
-    public int[] getA() { return Arrays.copyOf(A, numResources); }
-    public int[][] getC() { return C; }
-    public int[][] getR() { return R; }
 
     @Override
     public void run() {
@@ -148,7 +142,7 @@ public class SO extends Thread {
                 }
             }
         } catch (InterruptedException e) {
-            // tratamento, se necessário
+            e.printStackTrace();
         }
     }
 }
