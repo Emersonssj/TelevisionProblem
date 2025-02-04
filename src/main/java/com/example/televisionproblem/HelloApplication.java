@@ -121,8 +121,32 @@ public class HelloApplication extends Application {
             for (int i = 0; i < numResources; i++) {
                 vetorE[i] = resourceData.get(i).getTotalInstances();
             }
-            so = new SO(0, vetorE, initialProcesses);
-            so.start(); // inicia verificação de deadlock
+
+            // Inicializa os semáforos
+            arrayE.clear();
+            arrayA.clear();
+            arrayC.clear();
+            arrayR.clear();
+
+            for (int i = 0; i < numResources; i++) {
+                arrayE.add(new Semaphore(vetorE[i])); // Vetor E (total de recursos)
+                arrayA.add(new Semaphore(vetorE[i])); // Vetor A (recursos disponíveis)
+            }
+
+            // Inicializa as matrizes C e R
+            for (int i = 0; i < initialProcesses; i++) {
+                ArrayList<Semaphore> rowC = new ArrayList<>();
+                ArrayList<Semaphore> rowR = new ArrayList<>();
+                for (int j = 0; j < numResources; j++) {
+                    rowC.add(new Semaphore(0)); // Matriz C (alocação)
+                    rowR.add(new Semaphore(0)); // Matriz R (requisição)
+                }
+                arrayC.add(rowC);
+                arrayR.add(rowR);
+            }
+
+            so = new SO(1000, initialProcesses); // Cria o SO
+            so.start(); // Inicia a verificação de deadlock
             openMainStage();
             primaryStage.close();
         });
@@ -251,8 +275,8 @@ public class HelloApplication extends Application {
                     }
                     Resource novoRecurso = new Resource(resId, resName, totalInstances);
                     resourceData.add(novoRecurso);
-                    so.addResource(totalInstances);
-                    numResources = so.getE().length;
+                    // Atualiza o número de recursos
+                    numResources = resourceData.size();
                     // Recria as colunas dinâmicas para as matrizes, se necessário
                     updateMatrixColumns();
                     addResourceStage.close();
@@ -296,7 +320,7 @@ public class HelloApplication extends Application {
                     int requestIntervalTime = Integer.parseInt(intervalInput.getText());
                     int utilizationTime = Integer.parseInt(utilizationInput.getText());
 
-                    int newProcessId = so.addProcess();
+                    int newProcessId = processNames.size(); // Simplesmente usa o tamanho da lista como ID
                     processNames.add(novoProcName);
 
                     Process novoProcesso = new Process(newProcessId, novoProcName, requestIntervalTime, utilizationTime, so);
@@ -313,7 +337,7 @@ public class HelloApplication extends Application {
         });
     }
 
-    // Atualiza as colunas dinâmicas das tabelas de matrizes caso o número de recursos tenha mudadom
+    // Atualiza as colunas dinâmicas das tabelas de matrizes caso o número de recursos tenha mudado
     private void updateMatrixColumns() {
         // Atualiza as colunas da matriz de alocação
         matrixCTable.getColumns().clear();
@@ -327,7 +351,7 @@ public class HelloApplication extends Application {
         procColR.setCellValueFactory(param -> new SimpleStringProperty(param.getValue().get(0)));
         matrixRTable.getColumns().add(procColR);
 
-        for (int j = 0; j < so.getE().length; j++) {
+        for (int j = 0; j < numResources; j++) {
             final int colIndex = j + 1;
             TableColumn<ObservableList<String>, String> colC = new TableColumn<>("R" + (j+1));
             colC.setCellValueFactory(param -> new SimpleStringProperty(param.getValue().get(colIndex)));
@@ -339,27 +363,24 @@ public class HelloApplication extends Application {
         }
     }
 
-    // Atualiza todas as tabelas com os dados atuais do SO
     private void updateTables() {
         ObservableList<ResourceRow> resourceRows = FXCollections.observableArrayList();
-        int[] E = so.getE();
-        int[] A = so.getA();
-        for (int i = 0; i < E.length; i++) {
-            String nome = (i < resourceData.size()) ? resourceData.get(i).getName() : "R" + (i+1);
-            resourceRows.add(new ResourceRow(nome, E[i], A[i]));
+        for (int i = 0; i < numResources; i++) {
+            String nome = (i < resourceData.size()) ? resourceData.get(i).getName() : "R" + (i + 1);
+            int total = HelloApplication.arrayE.get(i).availablePermits(); // Total de recursos
+            int disponivel = HelloApplication.arrayA.get(i).availablePermits(); // Recursos disponíveis
+            resourceRows.add(new ResourceRow(nome, total, disponivel));
         }
         resourceTable.setItems(resourceRows);
 
         // Atualiza a tabela da Matriz de Alocação (C)
         ObservableList<ObservableList<String>> dataC = FXCollections.observableArrayList();
-        int[][] C = so.getC();
-        for (int i = 0; i < C.length; i++) {
+        for (int i = 0; i < processNames.size(); i++) {
             ObservableList<String> row = FXCollections.observableArrayList();
-            // A primeira célula é o nome do processo ( preciso lembrar disso)
-            String procName = (i < processNames.size()) ? processNames.get(i) : "P" + i;
+            String procName = processNames.get(i);
             row.add(procName);
-            for (int j = 0; j < C[i].length; j++) {
-                row.add(String.valueOf(C[i][j]));
+            for (int j = 0; j < numResources; j++) {
+                row.add(String.valueOf(HelloApplication.arrayC.get(i).get(j).availablePermits())); // Valor real da alocação
             }
             dataC.add(row);
         }
@@ -367,13 +388,12 @@ public class HelloApplication extends Application {
 
         // Atualiza a tabela da Matriz de Requisição (R)
         ObservableList<ObservableList<String>> dataR = FXCollections.observableArrayList();
-        int[][] R = so.getR();
-        for (int i = 0; i < R.length; i++) {
+        for (int i = 0; i < processNames.size(); i++) {
             ObservableList<String> row = FXCollections.observableArrayList();
-            String procName = (i < processNames.size()) ? processNames.get(i) : "P" + i;
+            String procName = processNames.get(i);
             row.add(procName);
-            for (int j = 0; j < R[i].length; j++) {
-                row.add(String.valueOf(R[i][j]));
+            for (int j = 0; j < numResources; j++) {
+                row.add(String.valueOf(HelloApplication.arrayR.get(i).get(j).availablePermits())); // Valor real da requisição
             }
             dataR.add(row);
         }

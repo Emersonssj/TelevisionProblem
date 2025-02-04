@@ -24,8 +24,7 @@ public class SO extends Thread {
                 // Bloqueando o acesso ao vetor R enquanto a requisição é atualizada
                 for (int j = 0; j < numResources; j++) {
                     HelloApplication.arrayR.get(processId).get(j).acquire();
-                    HelloApplication.arrayR.get(processId).set(j, new Semaphore(request[j])); // Atualiza o recurso solicitado
-                    HelloApplication.arrayR.get(processId).get(j).release();
+                    HelloApplication.arrayR.get(processId).get(j).release(request[j]); // Atualiza o recurso solicitado
                 }
             } catch (InterruptedException e) {
                 e.printStackTrace();
@@ -51,11 +50,9 @@ public class SO extends Thread {
             for (int j = 0; j < numResources; j++) {
                 HelloApplication.arrayA.get(j).acquire(request[j]); // Reduz os recursos disponíveis
                 HelloApplication.arrayC.get(processId).get(j).acquire();
-                HelloApplication.arrayC.get(processId).set(j, new Semaphore(request[j])); // Atualiza a alocação
-                HelloApplication.arrayC.get(processId).get(j).release();
+                HelloApplication.arrayC.get(processId).get(j).release(request[j]); // Atualiza a alocação
                 HelloApplication.arrayR.get(processId).get(j).acquire();
-                HelloApplication.arrayR.get(processId).set(j, new Semaphore(0)); // Reseta a requisição
-                HelloApplication.arrayR.get(processId).get(j).release();
+                HelloApplication.arrayR.get(processId).get(j).release(0); // Reseta a requisição
             }
 
             return true;
