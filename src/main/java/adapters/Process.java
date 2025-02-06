@@ -1,12 +1,10 @@
 package adapters;
 
-import com.example.televisionproblem.HelloApplication;
-
 import java.util.Random;
 
 public class Process extends Thread {
     private int id;
-    private String processName;
+    private String processName;  // Novo atributo
     private int requestIntervalTime;
     private int utilizationTime;
     private SO so;
@@ -21,31 +19,29 @@ public class Process extends Thread {
     }
 
     private int[] generateRequest() {
-        int numResources = HelloApplication.arrayE.size();
+        int numResources = so.getE().length;
         int[] req = new int[numResources];
-
         for (int j = 0; j < numResources; j++) {
-            int maxInstances = HelloApplication.arrayE.get(j).availablePermits();
-            req[j] = maxInstances > 0 ? random.nextInt(maxInstances) + 1 : 0; // Gera uma requisição entre 1 e o máximo disponível
+            // Gera uma quantidade aleatória, mas não excede os recursos disponíveis
+            int availableResources = so.getE()[j];
+            req[j] = random.nextInt(availableResources) + 1;
         }
         return req;
     }
 
     public void requestResource() {
         int[] request = generateRequest();
-        so.setRequest(id, request); // Define a requisição na matriz R
+        so.setRequest(id, request);
         System.out.println("Processo " + processName + " solicitou: " + vectorToString(request));
-
-        boolean allocated = so.requestResources(id, request); // Tenta alocar
+        boolean allocated = so.requestResources(id, request);
         if (allocated) {
             System.out.println("Processo " + processName + " teve os recursos alocados. Iniciando execução...");
             try {
-                Thread.sleep(utilizationTime * 1000); // Simula o tempo de utilização
+                Thread.sleep(utilizationTime * 1000);
             } catch (InterruptedException e) {
-                e.printStackTrace();
+                // Tratamento de interrupção
             }
-
-            so.releaseResources(id); // Libera os recursos
+            so.releaseResources(id);
             System.out.println("Processo " + processName + " concluiu e liberou os recursos.");
         } else {
             System.out.println("Processo " + processName + " não conseguiu recursos e permanecerá aguardando.");
@@ -66,10 +62,11 @@ public class Process extends Thread {
     public void run() {
         try {
             while (true) {
-                Thread.sleep(requestIntervalTime * 1000); // Intervalo entre requisições
+                Thread.sleep(requestIntervalTime * 1000);
                 requestResource();
             }
         } catch (InterruptedException e) {
+            // Tratamento de interrupção
             System.out.println("Processo " + processName + " foi interrompido.");
         }
     }
