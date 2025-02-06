@@ -51,11 +51,6 @@ public class HelloApplication extends Application {
     // Número de recursos (atualizado a cada atualização, mas pode ser obtido via so.getE().length)
     private int numResources = 0;
 
-    // Semáforos para gerenciar o acesso às variáveis compartilhadas
-    public static List<Semaphore> arrayE = new ArrayList<>();
-    public static List<Semaphore> arrayA = new ArrayList<>();
-    public static ArrayList<ArrayList<Semaphore>> arrayC = new ArrayList<>();
-    public static ArrayList<ArrayList<Semaphore>> arrayR = new ArrayList<>();
     public static ObservableList<String> messages = FXCollections.observableArrayList();
 
     @Override
