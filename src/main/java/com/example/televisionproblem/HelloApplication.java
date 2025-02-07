@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.concurrent.Semaphore;
 
 public class HelloApplication extends Application {
+
     public static List<Semaphore> arrayE = new ArrayList<>();
     public static List<Semaphore> arrayA = new ArrayList<>();
     public static ArrayList<ArrayList<Semaphore>> arrayC = new ArrayList<>();
@@ -336,10 +337,13 @@ public class HelloApplication extends Application {
     }
 
     private void updateTables() {
+        // Obtém a lista de processos em deadlock
+        List<Integer> deadlockedProcesses = so.detectDeadlock();
+
         // Atualiza a tabela de recursos
         ObservableList<ResourceRow> resourceRows = FXCollections.observableArrayList();
         for (int i = 0; i < HelloApplication.arrayE.size(); i++) {
-            String nome = (i < resourceData.size()) ? resourceData.get(i).getName() : "R" + (i+1);
+            String nome = (i < resourceData.size()) ? resourceData.get(i).getName() : "R" + (i + 1);
             int total = HelloApplication.arrayE.get(i).availablePermits();
             int disponivel = HelloApplication.arrayA.get(i).availablePermits();
             resourceRows.add(new ResourceRow(nome, total, disponivel));
@@ -371,6 +375,22 @@ public class HelloApplication extends Application {
             dataR.add(row);
         }
         matrixRTable.setItems(dataR);
+
+        // Aplica o estilo vermelho às linhas dos processos em deadlock
+        for (int processId : deadlockedProcesses) {
+            if (processId < matrixCTable.getItems().size()) {
+                // Obtém a linha correspondente ao processo em deadlock na tabela C
+                matrixCTable.getItems().get(processId).forEach(cell -> {
+                    matrixCTable.lookup(".table-row-cell").setStyle("-fx-background-color: red;");
+                });
+            }
+            if (processId < matrixRTable.getItems().size()) {
+                // Obtém a linha correspondente ao processo em deadlock na tabela R
+                matrixRTable.getItems().get(processId).forEach(cell -> {
+                    matrixRTable.lookup(".table-row-cell").setStyle("-fx-background-color: red;");
+                });
+            }
+        }
     }
 
     public static void main(String[] args) {

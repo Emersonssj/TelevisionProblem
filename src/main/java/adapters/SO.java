@@ -4,6 +4,7 @@ import com.example.televisionproblem.HelloApplication;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.Semaphore;
 
 public class SO extends Thread {
@@ -70,7 +71,7 @@ public class SO extends Thread {
         }
     }
 
-    public synchronized boolean detectDeadlock() {
+    public synchronized List<Integer> detectDeadlock() {
         boolean[] finish = new boolean[numProcesses];
         int[] work = new int[numResources];
         for (int j = 0; j < numResources; j++) {
@@ -98,12 +99,15 @@ public class SO extends Thread {
                 }
             }
         } while (progress);
-        for (boolean f : finish) {
-            if (!f) {
-                return true;
+
+        // Identifica os processos em deadlock (aqueles que não podem terminar)
+        List<Integer> deadlockedProcesses = new ArrayList<>();
+        for (int i = 0; i < numProcesses; i++) {
+            if (!finish[i]) {
+                deadlockedProcesses.add(i);
             }
         }
-        return false;
+        return deadlockedProcesses;
     }
 
     // Método para adicionar um novo recurso (expande os arrays e atualiza as matrizes)
@@ -141,14 +145,15 @@ public class SO extends Thread {
         try {
             while (true) {
                 Thread.sleep(1000);
-                if (detectDeadlock()) {
-                    System.out.println("DEADLOCK DETECTADO!");
+                List<Integer> deadlockedProcesses = detectDeadlock();
+                if (!deadlockedProcesses.isEmpty()) {
+                    System.out.println("DEADLOCK DETECTADO! Processos envolvidos: " + deadlockedProcesses);
                 } else {
                     System.out.println("Sistema seguro. Nenhum deadlock detectado.");
                 }
             }
         } catch (InterruptedException e) {
-            // tratamento, se necessário
+            // Tratamento, se necessário
         }
     }
 }
