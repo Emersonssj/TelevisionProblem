@@ -1,3 +1,4 @@
+///////////////////// Arquivo Resource.java /////////////////////////
 package adapters;
 
 public class Resource {

@@ -1,4 +1,7 @@
+/////////// Arquivo Process.java /////////////////////
 package adapters;
+
+import com.example.televisionproblem.HelloApplication;
 
 import java.util.Random;
 
@@ -19,12 +22,11 @@ public class Process extends Thread {
     }
 
     private int[] generateRequest() {
-        int numResources = so.getE().length;
+        int numResources = HelloApplication.arrayE.size();
         int[] req = new int[numResources];
         for (int j = 0; j < numResources; j++) {
-            // Gera uma quantidade aleatória, mas não excede os recursos disponíveis
-            int availableResources = so.getE()[j];
-            req[j] = random.nextInt(availableResources) + 1;
+            // Gera um número aleatório entre 1 e o número máximo de recursos disponíveis
+            req[j] = random.nextInt(HelloApplication.arrayE.get(j).availablePermits()) + 1;
         }
         return req;
     }
@@ -38,9 +40,7 @@ public class Process extends Thread {
             System.out.println("Processo " + processName + " teve os recursos alocados. Iniciando execução...");
             try {
                 Thread.sleep(utilizationTime * 1000);
-            } catch (InterruptedException e) {
-                // Tratamento de interrupção
-            }
+            } catch (InterruptedException e) { }
             so.releaseResources(id);
             System.out.println("Processo " + processName + " concluiu e liberou os recursos.");
         } else {
@@ -66,8 +66,7 @@ public class Process extends Thread {
                 requestResource();
             }
         } catch (InterruptedException e) {
-            // Tratamento de interrupção
-            System.out.println("Processo " + processName + " foi interrompido.");
+            // tratamento, se necessário
         }
     }
 }

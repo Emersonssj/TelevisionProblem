@@ -24,8 +24,6 @@ import java.util.List;
 import java.util.concurrent.Semaphore;
 
 public class HelloApplication extends Application {
-
-    // Semáforos para gerenciar o acesso às variáveis compartilhadas
     public static List<Semaphore> arrayE = new ArrayList<>();
     public static List<Semaphore> arrayA = new ArrayList<>();
     public static ArrayList<ArrayList<Semaphore>> arrayC = new ArrayList<>();
@@ -50,8 +48,6 @@ public class HelloApplication extends Application {
 
     // Número de recursos (atualizado a cada atualização, mas pode ser obtido via so.getE().length)
     private int numResources = 0;
-
-    public static ObservableList<String> messages = FXCollections.observableArrayList();
 
     @Override
     public void start(Stage primaryStage) {
@@ -162,20 +158,6 @@ public class HelloApplication extends Application {
         topMenu.getChildren().addAll(btnAddResource, btnAddProcess);
         root.setTop(topMenu);
 
-
-        // Parte direita: Log de mensagens
-        ListView<String> logListView = new ListView<>(messages);
-
-        ScrollPane logScrollPane = new ScrollPane(logListView);
-        logScrollPane.setFitToWidth(true);
-        logScrollPane.setPrefWidth(250);
-        VBox.setVgrow(logScrollPane, Priority.ALWAYS);
-
-        VBox logArea = new VBox(5, logScrollPane);
-        logArea.setStyle("-fx-padding: 10;");
-        root.setRight(logArea);
-
-
         // Centro: Área para exibição dos dados em forma de tabelas
         VBox centerBox = new VBox(10);
         centerBox.setPadding(new Insets(10));
@@ -189,7 +171,7 @@ public class HelloApplication extends Application {
         TableColumn<ResourceRow, Integer> colA = new TableColumn<>("A");
         colA.setCellValueFactory(new PropertyValueFactory<>("disponivel"));
         resourceTable.getColumns().addAll(colRecurso, colE, colA);
-        resourceTable.setPrefHeight(400);
+        resourceTable.setPrefHeight(150);
 
         // Tabela de Matriz de Alocação (C)
         matrixCTable = new TableView<>();
@@ -268,8 +250,7 @@ public class HelloApplication extends Application {
                     Resource novoRecurso = new Resource(resId, resName, totalInstances);
                     resourceData.add(novoRecurso);
                     so.addResource(totalInstances);
-                    numResources = so.getE().length;
-                    // Recria as colunas dinâmicas para as matrizes, se necessário
+                    numResources = HelloApplication.arrayE.size();
                     updateMatrixColumns();
                     addResourceStage.close();
                     Alert alert = new Alert(Alert.AlertType.INFORMATION, "Recurso adicionado com sucesso!");
@@ -315,7 +296,6 @@ public class HelloApplication extends Application {
                     int newProcessId = so.addProcess();
                     processNames.add(novoProcName);
 
-                    // Cria o processo passando também o nome para a exibição nas mensagens internas
                     Process novoProcesso = new Process(newProcessId, novoProcName, requestIntervalTime, utilizationTime, so);
                     novoProcesso.start();
 
@@ -330,7 +310,6 @@ public class HelloApplication extends Application {
         });
     }
 
-    // Atualiza as colunas dinâmicas das tabelas de matrizes caso o número de recursos tenha mudado
     private void updateMatrixColumns() {
         // Atualiza as colunas da matriz de alocação
         matrixCTable.getColumns().clear();
@@ -344,58 +323,37 @@ public class HelloApplication extends Application {
         procColR.setCellValueFactory(param -> new SimpleStringProperty(param.getValue().get(0)));
         matrixRTable.getColumns().add(procColR);
 
-        // Adiciona colunas dinamicamente conforme o número de recursos
-        for (int j = 0; j < so.getE().length; j++) {
-            final int colIndex = j + 1; // Considera colIndex como indexado para o recurso
-            TableColumn<ObservableList<String>, String> colC = new TableColumn<>("R" + (j + 1));
-            colC.setCellValueFactory(param -> {
-                if (param.getValue().size() > colIndex) {
-                    return new SimpleStringProperty(param.getValue().get(colIndex));
-                } else {
-                    return new SimpleStringProperty(""); // Evita erro ao acessar índices inexistentes
-                }
-            });
+        for (int j = 0; j < HelloApplication.arrayE.size(); j++) {
+            final int colIndex = j + 1;
+            TableColumn<ObservableList<String>, String> colC = new TableColumn<>("R" + (j+1));
+            colC.setCellValueFactory(param -> new SimpleStringProperty(param.getValue().get(colIndex)));
             matrixCTable.getColumns().add(colC);
 
-            TableColumn<ObservableList<String>, String> colR = new TableColumn<>("R" + (j + 1));
-            colR.setCellValueFactory(param -> {
-                if (param.getValue().size() > colIndex) {
-                    return new SimpleStringProperty(param.getValue().get(colIndex));
-                } else {
-                    return new SimpleStringProperty(""); // Evita erro ao acessar índices inexistentes
-                }
-            });
+            TableColumn<ObservableList<String>, String> colR = new TableColumn<>("R" + (j+1));
+            colR.setCellValueFactory(param -> new SimpleStringProperty(param.getValue().get(colIndex)));
             matrixRTable.getColumns().add(colR);
         }
-
-        // Atualiza os dados das colunas para refletir mudanças no número de recursos
-        updateTables();
     }
 
-
-    // Atualiza todas as tabelas com os dados atuais do SO
     private void updateTables() {
         // Atualiza a tabela de recursos
         ObservableList<ResourceRow> resourceRows = FXCollections.observableArrayList();
-        int[] E = so.getE();
-        int[] A = so.getA();
-        for (int i = 0; i < E.length; i++) {
-            // Se houver informação no resourceData, utiliza o nome do recurso; caso contrário, usa um índice padrão
+        for (int i = 0; i < HelloApplication.arrayE.size(); i++) {
             String nome = (i < resourceData.size()) ? resourceData.get(i).getName() : "R" + (i+1);
-            resourceRows.add(new ResourceRow(nome, E[i], A[i]));
+            int total = HelloApplication.arrayE.get(i).availablePermits();
+            int disponivel = HelloApplication.arrayA.get(i).availablePermits();
+            resourceRows.add(new ResourceRow(nome, total, disponivel));
         }
         resourceTable.setItems(resourceRows);
 
         // Atualiza a tabela da Matriz de Alocação (C)
         ObservableList<ObservableList<String>> dataC = FXCollections.observableArrayList();
-        int[][] C = so.getC();
-        for (int i = 0; i < C.length; i++) {
+        for (int i = 0; i < HelloApplication.arrayC.size(); i++) {
             ObservableList<String> row = FXCollections.observableArrayList();
-            // A primeira célula é o nome do processo
             String procName = (i < processNames.size()) ? processNames.get(i) : "P" + i;
             row.add(procName);
-            for (int j = 0; j < C[i].length; j++) {
-                row.add(String.valueOf(C[i][j]));
+            for (int j = 0; j < HelloApplication.arrayC.get(i).size(); j++) {
+                row.add(String.valueOf(HelloApplication.arrayC.get(i).get(j).availablePermits()));
             }
             dataC.add(row);
         }
@@ -403,13 +361,12 @@ public class HelloApplication extends Application {
 
         // Atualiza a tabela da Matriz de Requisição (R)
         ObservableList<ObservableList<String>> dataR = FXCollections.observableArrayList();
-        int[][] R = so.getR();
-        for (int i = 0; i < R.length; i++) {
+        for (int i = 0; i < HelloApplication.arrayR.size(); i++) {
             ObservableList<String> row = FXCollections.observableArrayList();
             String procName = (i < processNames.size()) ? processNames.get(i) : "P" + i;
             row.add(procName);
-            for (int j = 0; j < R[i].length; j++) {
-                row.add(String.valueOf(R[i][j]));
+            for (int j = 0; j < HelloApplication.arrayR.get(i).size(); j++) {
+                row.add(String.valueOf(HelloApplication.arrayR.get(i).get(j).availablePermits()));
             }
             dataR.add(row);
         }
