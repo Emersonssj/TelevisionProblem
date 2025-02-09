@@ -10,41 +10,38 @@ public class Process extends Thread {
     private String processName;  // Novo atributo
     private int requestIntervalTime;
     private int utilizationTime;
-    private SO so;
-    private Random random = new Random();
 
-    public Process(int id, String processName, int requestIntervalTime, int utilizationTime, SO so) {
+    public Process(int id, String processName, int requestIntervalTime, int utilizationTime) {
         this.id = id;
         this.processName = processName;
         this.requestIntervalTime = requestIntervalTime;
         this.utilizationTime = utilizationTime;
-        this.so = so;
-    }
-
-    private int[] generateRequest() {
-        int numResources = HelloApplication.arrayE.size();
-        int[] req = new int[numResources];
-        for (int j = 0; j < numResources; j++) {
-            // Gera um número aleatório entre 1 e o número máximo de recursos disponíveis
-            req[j] = random.nextInt(HelloApplication.arrayE.get(j).availablePermits()) + 1;
-        }
-        return req;
     }
 
     public void requestResource() {
-        int[] request = generateRequest();
-        so.setRequest(id, request);
-        System.out.println("Processo " + processName + " solicitou: " + vectorToString(request));
-        boolean allocated = so.requestResources(id, request);
+        Random random = new Random();
+
+        int resourceRange = HelloApplication.arrayE.size();
+        int[] request = new int[resourceRange];
+        for (int j = 0; j < resourceRange; j++) {
+            // Gera um número aleatório entre 1 e o número máximo de recursos disponíveis
+            request[j] = random.nextInt(HelloApplication.arrayE.get(j)) + 1;
+        }
+
+        //requisitar um recurso de um elemento da lista avaiable
+
+        HelloApplication.so.setRequest(id, request);
+        HelloApplication.messages.add("Processo " + processName + " solicitou: " + vectorToString(request));
+        boolean allocated = HelloApplication.so.requestResources(id, request);
         if (allocated) {
-            System.out.println("Processo " + processName + " teve os recursos alocados. Iniciando execução...");
+            HelloApplication.messages.add("Processo " + processName + " teve os recursos alocados. Iniciando execução...");
             try {
                 Thread.sleep(utilizationTime * 1000);
             } catch (InterruptedException e) { }
-            so.releaseResources(id);
-            System.out.println("Processo " + processName + " concluiu e liberou os recursos.");
+            HelloApplication.so.releaseResources(id);
+            HelloApplication.messages.add("Processo " + processName + " concluiu e liberou os recursos.");
         } else {
-            System.out.println("Processo " + processName + " não conseguiu recursos e permanecerá aguardando.");
+            HelloApplication.messages.add("Processo " + processName + " não conseguiu recursos e permanecerá aguardando.");
         }
     }
 

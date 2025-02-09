@@ -21,7 +21,7 @@ public class SO extends Thread {
 
         // Inicializa os semáforos
         for (int i = 0; i < E.length; i++) {
-            HelloApplication.arrayE.add(new Semaphore(E[i]));
+            HelloApplication.arrayE.add(E[i]);
             HelloApplication.arrayA.add(new Semaphore(E[i]));
         }
 
@@ -112,7 +112,7 @@ public class SO extends Thread {
 
     // Método para adicionar um novo recurso (expande os arrays e atualiza as matrizes)
     public synchronized void addResource(int totalInstances) {
-        HelloApplication.arrayE.add(new Semaphore(totalInstances));
+        HelloApplication.arrayE.add(totalInstances);
         HelloApplication.arrayA.add(new Semaphore(totalInstances));
         for (ArrayList<Semaphore> row : HelloApplication.arrayC) {
             row.add(new Semaphore(0));
@@ -121,7 +121,7 @@ public class SO extends Thread {
             row.add(new Semaphore(0));
         }
         numResources++;
-        System.out.println("Novo recurso adicionado. Total de recursos agora: " + numResources);
+        HelloApplication.messages.add("Novo recurso adicionado. Total de recursos agora: " + numResources);
     }
 
     // Método para adicionar um novo processo (expande as matrizes e retorna o novo id)
@@ -136,7 +136,7 @@ public class SO extends Thread {
         HelloApplication.arrayC.add(newRowC);
         HelloApplication.arrayR.add(newRowR);
         numProcesses++;
-        System.out.println("Novo processo adicionado. Total de processos agora: " + numProcesses);
+        HelloApplication.messages.add("Novo processo adicionado. Total de processos agora: " + numProcesses);
         return newProcessId;
     }
 
@@ -147,9 +147,9 @@ public class SO extends Thread {
                 Thread.sleep(1000);
                 List<Integer> deadlockedProcesses = detectDeadlock();
                 if (!deadlockedProcesses.isEmpty()) {
-                    System.out.println("DEADLOCK DETECTADO! Processos envolvidos: " + deadlockedProcesses);
+                    HelloApplication.messages.add("DEADLOCK DETECTADO! Processos envolvidos: " + deadlockedProcesses);
                 } else {
-                    System.out.println("Sistema seguro. Nenhum deadlock detectado.");
+                    HelloApplication.messages.add("Sistema seguro. Nenhum deadlock detectado.");
                 }
             }
         } catch (InterruptedException e) {

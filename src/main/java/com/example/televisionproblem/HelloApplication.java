@@ -24,20 +24,21 @@ import java.util.List;
 import java.util.concurrent.Semaphore;
 
 public class HelloApplication extends Application {
+    public static SO so;
+    public static ObservableList<String> messages = FXCollections.observableArrayList();
 
-    public static List<Semaphore> arrayE = new ArrayList<>();
+    public static List<Integer> arrayE = new ArrayList<>();
     public static List<Semaphore> arrayA = new ArrayList<>();
     public static ArrayList<ArrayList<Semaphore>> arrayC = new ArrayList<>();
     public static ArrayList<ArrayList<Semaphore>> arrayR = new ArrayList<>();
+
+    public static Semaphore mutex = new Semaphore(1);
 
     // Lista para armazenar os recursos cadastrados (para exibição e para criação do vetor E)
     private ObservableList<Resource> resourceData = FXCollections.observableArrayList();
 
     // Lista para armazenar os nomes dos processos (índice = id do processo)
     private List<String> processNames = new ArrayList<>();
-
-    // Referência ao SO (será criado após a configuração dos recursos)
-    private SO so;
 
     // No início, nenhum processo é criado automaticamente
     private int initialProcesses = 0;
@@ -158,6 +159,18 @@ public class HelloApplication extends Application {
         Button btnAddProcess = new Button("Adicionar Processo");
         topMenu.getChildren().addAll(btnAddResource, btnAddProcess);
         root.setTop(topMenu);
+
+        // Parte direita: Log de mensagens
+        ListView<String> logListView = new ListView<>(messages);
+
+        ScrollPane logScrollPane = new ScrollPane(logListView);
+        logScrollPane.setFitToWidth(true);
+        logScrollPane.setPrefWidth(250);
+        VBox.setVgrow(logScrollPane, Priority.ALWAYS);
+
+        VBox logArea = new VBox(5, logScrollPane);
+        logArea.setStyle("-fx-padding: 10;");
+        root.setRight(logArea);
 
         // Centro: Área para exibição dos dados em forma de tabelas
         VBox centerBox = new VBox(10);
@@ -297,7 +310,7 @@ public class HelloApplication extends Application {
                     int newProcessId = so.addProcess();
                     processNames.add(novoProcName);
 
-                    Process novoProcesso = new Process(newProcessId, novoProcName, requestIntervalTime, utilizationTime, so);
+                    Process novoProcesso = new Process(newProcessId, novoProcName, requestIntervalTime, utilizationTime);
                     novoProcesso.start();
 
                     addProcessStage.close();
@@ -344,7 +357,7 @@ public class HelloApplication extends Application {
         ObservableList<ResourceRow> resourceRows = FXCollections.observableArrayList();
         for (int i = 0; i < HelloApplication.arrayE.size(); i++) {
             String nome = (i < resourceData.size()) ? resourceData.get(i).getName() : "R" + (i + 1);
-            int total = HelloApplication.arrayE.get(i).availablePermits();
+            int total = HelloApplication.arrayE.get(i);
             int disponivel = HelloApplication.arrayA.get(i).availablePermits();
             resourceRows.add(new ResourceRow(nome, total, disponivel));
         }
