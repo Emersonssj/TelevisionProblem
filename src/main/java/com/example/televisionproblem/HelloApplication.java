@@ -403,7 +403,7 @@ public class HelloApplication extends Application {
         }
     }
 
-    private void updateTables() {
+    public void updateTables() {
         // Obtém a lista de processos em deadlock
         List<Integer> deadlockedProcesses = so.detectDeadlock();
 

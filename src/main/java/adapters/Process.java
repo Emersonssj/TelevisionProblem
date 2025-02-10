@@ -24,6 +24,11 @@ public class Process extends Thread {
             return; // Se a thread foi interrompida, não tenta acessar recursos
         }
 
+        // Verifica se o ID do processo ainda é válido
+        if (id >= HelloApplication.arrayC.size() || id >= HelloApplication.arrayR.size()) {
+            return; // Processo já foi removido, não tenta acessar recursos
+        }
+
         Random random = new Random();
 
         int resourceRange = HelloApplication.arrayE.size();
