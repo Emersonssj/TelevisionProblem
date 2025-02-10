@@ -167,7 +167,7 @@ public class HelloApplication extends Application {
 
         ScrollPane logScrollPane = new ScrollPane(logListView);
         logScrollPane.setFitToWidth(true);
-        logScrollPane.setPrefWidth(250);
+        logScrollPane.setPrefWidth(400);
         VBox.setVgrow(logScrollPane, Priority.ALWAYS);
 
         VBox logArea = new VBox(5, logScrollPane);

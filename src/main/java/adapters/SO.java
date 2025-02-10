@@ -4,7 +4,6 @@ import com.example.televisionproblem.HelloApplication;
 import javafx.application.Platform;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Semaphore;
 
@@ -223,9 +222,10 @@ public class SO extends Thread {
                 Platform.runLater(() -> {
                     if (!deadlockedProcesses.isEmpty()) {
                         HelloApplication.messages.add("DEADLOCK DETECTADO! Processos envolvidos: " + deadlockedProcesses);
-                    } else {
-                        HelloApplication.messages.add("Sistema seguro. Nenhum deadlock detectado.");
                     }
+//                    else {
+//                       // HelloApplication.messages.add("Sistema seguro. Nenhum deadlock detectado.");
+//                    }
                 });
             }
         } catch (InterruptedException e) {
