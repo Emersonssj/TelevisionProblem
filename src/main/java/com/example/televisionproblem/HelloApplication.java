@@ -152,6 +152,8 @@ public class HelloApplication extends Application {
     private void openMainStage() {
         BorderPane root = new BorderPane();
 
+
+
         // Topo: Botões de menu
         HBox topMenu = new HBox(10);
         topMenu.setPadding(new Insets(10));
@@ -318,6 +320,58 @@ public class HelloApplication extends Application {
                     alert.showAndWait();
                 } catch (NumberFormatException ex) {
                     Alert alert = new Alert(Alert.AlertType.ERROR, "Preencha os campos corretamente e informe um nome válido!");
+                    alert.showAndWait();
+                }
+            });
+        });
+
+        //  Botão para remover processo
+        Button btnRemoveProcess = new Button("Remover Processo");
+        topMenu.getChildren().add(btnRemoveProcess);
+
+
+        btnRemoveProcess.setOnAction(e -> {
+            Stage removeProcessStage = new Stage();
+            removeProcessStage.initModality(Modality.APPLICATION_MODAL);
+            removeProcessStage.setTitle("Remover Processo");
+
+            Label nameLabel = new Label("Nome do Processo:");
+            TextField nameInput = new TextField();
+            Button removeButton = new Button("Remover");
+
+            VBox layout = new VBox(10);
+            layout.setPadding(new Insets(10));
+            layout.getChildren().addAll(nameLabel, nameInput, removeButton);
+
+            Scene sceneRemove = new Scene(layout, 250, 150);
+            removeProcessStage.setScene(sceneRemove);
+            removeProcessStage.show();
+
+            removeButton.setOnAction(event -> {
+                String processName = nameInput.getText().trim();
+                if (processName.isEmpty()) {
+                    Alert alert = new Alert(Alert.AlertType.ERROR, "Nome do processo não pode estar vazio!");
+                    alert.showAndWait();
+                    return;
+                }
+
+                // Encontra o ID do processo com base no nome
+                int processId = -1;
+                for (int i = 0; i < processNames.size(); i++) {
+                    if (processNames.get(i).equals(processName)) {
+                        processId = i;
+                        break;
+                    }
+                }
+
+                if (processId != -1) {
+                    so.removeProcess(processId);
+                    processNames.remove(processId); // Remove o nome da lista
+                    removeProcessStage.close();
+                    Alert alert = new Alert(Alert.AlertType.INFORMATION, "Processo removido com sucesso!");
+                    alert.showAndWait();
+                } else {
+                    Alert alert = new Alert(Alert.AlertType.ERROR, "Processo com nome '" + processName + "' não encontrado!");
                     alert.showAndWait();
                 }
             });

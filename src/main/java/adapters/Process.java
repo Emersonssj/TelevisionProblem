@@ -2,6 +2,7 @@
 package adapters;
 
 import com.example.televisionproblem.HelloApplication;
+import javafx.application.Platform;
 
 import java.util.Random;
 
@@ -19,6 +20,10 @@ public class Process extends Thread {
     }
 
     public void requestResource() {
+        if (Thread.currentThread().isInterrupted()) {
+            return; // Se a thread foi interrompida, não tenta acessar recursos
+        }
+
         Random random = new Random();
 
         int resourceRange = HelloApplication.arrayE.size();
@@ -28,20 +33,32 @@ public class Process extends Thread {
             request[j] = random.nextInt(HelloApplication.arrayE.get(j)) + 1;
         }
 
-        //requisitar um recurso de um elemento da lista avaiable
-
+        // Requisitar um recurso de um elemento da lista available
         HelloApplication.so.setRequest(id, request);
-        HelloApplication.messages.add("Processo " + processName + " solicitou: " + vectorToString(request));
+        Platform.runLater(() -> {
+            HelloApplication.messages.add("Processo " + processName + " solicitou: " + vectorToString(request));
+        });
+
         boolean allocated = HelloApplication.so.requestResources(id, request);
         if (allocated) {
-            HelloApplication.messages.add("Processo " + processName + " teve os recursos alocados. Iniciando execução...");
+            Platform.runLater(() -> {
+                HelloApplication.messages.add("Processo " + processName + " teve os recursos alocados. Iniciando execução...");
+            });
             try {
                 Thread.sleep(utilizationTime * 1000);
-            } catch (InterruptedException e) { }
+            } catch (InterruptedException e) {
+                // Thread interrompida, finaliza o processo
+                Thread.currentThread().interrupt(); // Restaura o status de interrupção
+                return;
+            }
             HelloApplication.so.releaseResources(id);
-            HelloApplication.messages.add("Processo " + processName + " concluiu e liberou os recursos.");
+            Platform.runLater(() -> {
+                HelloApplication.messages.add("Processo " + processName + " concluiu e liberou os recursos.");
+            });
         } else {
-            HelloApplication.messages.add("Processo " + processName + " não conseguiu recursos e permanecerá aguardando.");
+            Platform.runLater(() -> {
+                HelloApplication.messages.add("Processo " + processName + " não conseguiu recursos e permanecerá aguardando.");
+            });
         }
     }
 
@@ -58,12 +75,15 @@ public class Process extends Thread {
     @Override
     public void run() {
         try {
-            while (true) {
+            while (!Thread.currentThread().isInterrupted()) { // Verifica se a thread foi interrompida
                 Thread.sleep(requestIntervalTime * 1000);
                 requestResource();
             }
         } catch (InterruptedException e) {
-            // tratamento, se necessário
+            // Thread interrompida, finaliza o processo
+            Platform.runLater(() -> {
+                HelloApplication.messages.add("Processo " + processName + " foi interrompido e removido.");
+            });
         }
     }
 }

@@ -1,6 +1,7 @@
 package adapters;
 
 import com.example.televisionproblem.HelloApplication;
+import javafx.application.Platform;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -140,17 +141,50 @@ public class SO extends Thread {
         return newProcessId;
     }
 
+    public synchronized void removeProcess(int processId) {
+        if (processId < numProcesses) {
+            // Interrompe a thread do processo, se estiver rodando
+            for (Thread thread : Thread.getAllStackTraces().keySet()) {
+                if (thread instanceof Process && ((Process) thread).getId() == processId) {
+                    thread.interrupt(); // Interrompe a thread do processo
+                    break;
+                }
+            }
+
+            // Libera os recursos alocados pelo processo
+            releaseResources(processId);
+
+            // Remove o processo das estruturas de dados
+            HelloApplication.arrayC.remove(processId);
+            HelloApplication.arrayR.remove(processId);
+
+            // Atualiza o número de processos
+            numProcesses--;
+
+            // Adiciona uma mensagem ao log
+            Platform.runLater(() -> {
+                HelloApplication.messages.add("Processo " + processId + " removido com sucesso.");
+            });
+        } else {
+            Platform.runLater(() -> {
+                HelloApplication.messages.add("Processo " + processId + " não encontrado.");
+            });
+        }
+    }
+
     @Override
     public void run() {
         try {
             while (true) {
                 Thread.sleep(1000);
                 List<Integer> deadlockedProcesses = detectDeadlock();
-                if (!deadlockedProcesses.isEmpty()) {
-                    HelloApplication.messages.add("DEADLOCK DETECTADO! Processos envolvidos: " + deadlockedProcesses);
-                } else {
-                    HelloApplication.messages.add("Sistema seguro. Nenhum deadlock detectado.");
-                }
+                Platform.runLater(() -> {
+                    if (!deadlockedProcesses.isEmpty()) {
+                        HelloApplication.messages.add("DEADLOCK DETECTADO! Processos envolvidos: " + deadlockedProcesses);
+                    } else {
+                        HelloApplication.messages.add("Sistema seguro. Nenhum deadlock detectado.");
+                    }
+                });
             }
         } catch (InterruptedException e) {
             // Tratamento, se necessário
