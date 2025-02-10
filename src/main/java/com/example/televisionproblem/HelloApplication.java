@@ -187,7 +187,7 @@ public class HelloApplication extends Application {
         TableColumn<ResourceRow, Integer> colA = new TableColumn<>("A");
         colA.setCellValueFactory(new PropertyValueFactory<>("disponivel"));
         resourceTable.getColumns().addAll(colRecurso, colE, colA);
-        resourceTable.setPrefHeight(150);
+        resourceTable.setPrefHeight(400);
 
         // Tabela de Matriz de Alocação (C)
         matrixCTable = new TableView<>();
@@ -403,7 +403,7 @@ public class HelloApplication extends Application {
         }
     }
 
-    public void updateTables() {
+    private void updateTables() {
         // Obtém a lista de processos em deadlock
         List<Integer> deadlockedProcesses = so.detectDeadlock();
 

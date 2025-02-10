@@ -49,6 +49,9 @@ public class SO extends Thread {
     public synchronized boolean requestResources(int processId, int[] request) {
         for (int j = 0; j < numResources; j++) {
             if (request[j] > HelloApplication.arrayA.get(j).availablePermits()) {
+                Platform.runLater(() -> {
+                    HelloApplication.messages.add("Processo " + processId + " não conseguiu recursos e permanecerá aguardando.");
+                });
                 return false;
             }
         }
@@ -61,14 +64,22 @@ public class SO extends Thread {
                 e.printStackTrace();
             }
         }
+        Platform.runLater(() -> {
+            HelloApplication.messages.add("Processo " + processId + " teve os recursos alocados. Iniciando execução...");
+        });
         return true;
     }
 
     public synchronized void releaseResources(int processId) {
         for (int j = 0; j < numResources; j++) {
             int permits = HelloApplication.arrayC.get(processId).get(j).availablePermits();
-            HelloApplication.arrayC.get(processId).get(j).acquireUninterruptibly(permits);
-            HelloApplication.arrayA.get(j).release(permits);
+            if (permits > 0) {
+                HelloApplication.arrayC.get(processId).get(j).acquireUninterruptibly(permits);
+                HelloApplication.arrayA.get(j).release(permits);
+//                Platform.runLater(() -> {
+//                    HelloApplication.messages.add("Processo " + processId + " liberou " + permits + " instância(s) do recurso R" + (j + 1));
+//                });
+            }
         }
     }
 
@@ -169,6 +180,37 @@ public class SO extends Thread {
             Platform.runLater(() -> {
                 HelloApplication.messages.add("Processo " + processId + " não encontrado.");
             });
+        }
+    }
+
+
+    public synchronized boolean requestOneResource(int processId) {
+        for (int j = 0; j < numResources; j++) {
+            // Verifica se o processo requisitou o recurso j e se ele está disponível
+            if (HelloApplication.arrayR.get(processId).get(j).availablePermits() > 0 &&
+                    HelloApplication.arrayA.get(j).availablePermits() > 0) {
+                try {
+                    // Aloca 1 instância do recurso j
+                    HelloApplication.arrayA.get(j).acquire(1);
+                    HelloApplication.arrayC.get(processId).get(j).release(1);
+                    HelloApplication.arrayR.get(processId).get(j).acquire(1);
+                    return true; // Recurso alocado com sucesso
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+        return false; // Nenhum recurso disponível para alocar
+    }
+
+    public synchronized void releaseOneResource(int processId) {
+        for (int j = 0; j < numResources; j++) {
+            // Libera 1 instância do recurso j, se estiver alocado
+            if (HelloApplication.arrayC.get(processId).get(j).availablePermits() > 0) {
+                HelloApplication.arrayC.get(processId).get(j).acquireUninterruptibly(1);
+                HelloApplication.arrayA.get(j).release(1);
+                break; // Libera apenas 1 recurso por vez
+            }
         }
     }
 
