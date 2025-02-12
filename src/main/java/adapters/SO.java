@@ -80,26 +80,33 @@ public class SO extends Thread {
     }
 
     public synchronized List<Integer> detectDeadlock() {
-        boolean[] finish = new boolean[numProcesses];
-        int[] work = new int[numResources];
+        // Passo 1: Vetor de recursos existentes E
+        // Passo 2: Matriz de alocação corrente C
+        // Passo 3: Matriz de requisições R
+        // Passo 4: Vetor de recursos disponíveis A
+        int[] available = new int[numResources];
         for (int j = 0; j < numResources; j++) {
-            work[j] = HelloApplication.arrayA.get(j).availablePermits();
+            available[j] = HelloApplication.arrayA.get(j).availablePermits();
         }
+
+        // Passo 5: Percorrer R verificando processos que podem ser executados
+        boolean[] finish = new boolean[numProcesses];
         boolean progress;
         do {
             progress = false;
             for (int i = 0; i < numProcesses; i++) {
                 if (!finish[i]) {
-                    boolean canFinish = true;
+                    boolean canExecute = true;
                     for (int j = 0; j < numResources; j++) {
-                        if (HelloApplication.arrayR.get(i).get(j).availablePermits() > work[j]) {
-                            canFinish = false;
+                        if (HelloApplication.arrayR.get(i).get(j).availablePermits() > available[j]) {
+                            canExecute = false;
                             break;
                         }
                     }
-                    if (canFinish) {
+                    if (canExecute) {
+                        // Simular execução e liberação de recursos
                         for (int j = 0; j < numResources; j++) {
-                            work[j] += HelloApplication.arrayC.get(i).get(j).availablePermits();
+                            available[j] += HelloApplication.arrayC.get(i).get(j).availablePermits();
                         }
                         finish[i] = true;
                         progress = true;
@@ -108,7 +115,7 @@ public class SO extends Thread {
             }
         } while (progress);
 
-        // Identifica os processos em deadlock (aqueles que não podem terminar)
+        // Identificar processos em deadlock
         List<Integer> deadlockedProcesses = new ArrayList<>();
         for (int i = 0; i < numProcesses; i++) {
             if (!finish[i]) {
