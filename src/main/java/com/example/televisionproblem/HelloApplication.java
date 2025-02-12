@@ -227,7 +227,13 @@ public class HelloApplication extends Application {
         mainStage.show();
 
         // Atualiza as tabelas periodicamente
-        Timeline timeline = new Timeline(new KeyFrame(Duration.seconds(1), event -> updateTables()));
+        Timeline timeline = new Timeline(new KeyFrame(Duration.seconds(1), event -> {
+            try {
+                updateTables();
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        }));
         timeline.setCycleCount(Timeline.INDEFINITE);
         timeline.play();
 
@@ -319,7 +325,11 @@ public class HelloApplication extends Application {
                 }
 
                 if (processId != -1) {
-                    so.removeProcess(processId);
+                    try {
+                        so.removeProcess(processId);
+                    } catch (InterruptedException ex) {
+                        throw new RuntimeException(ex);
+                    }
                     processNames.remove(processId); // Remove o nome da lista
                     removeProcessStage.close();
                     Alert alert = new Alert(Alert.AlertType.INFORMATION, "Processo removido com sucesso!");
@@ -357,7 +367,7 @@ public class HelloApplication extends Application {
         }
     }
 
-    private void updateTables() {
+    private void updateTables() throws InterruptedException {
         // Obtém a lista de processos em deadlock
         List<Integer> deadlockedProcesses = so.detectDeadlock();
 

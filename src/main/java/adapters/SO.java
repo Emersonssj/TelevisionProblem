@@ -8,14 +8,10 @@ import java.util.List;
 import java.util.concurrent.Semaphore;
 
 public class SO extends Thread {
-    private int timeDuration; // Pode ser utilizado para controle de execução (não usado aqui)
-
-    // Controle do número de processos e recursos
     private int numProcesses;
     private int numResources;
 
     public SO(int timeDuration, int[] E, int numProcesses) {
-        this.timeDuration = timeDuration;
         this.numResources = E.length;
         this.numProcesses = numProcesses;
 
@@ -37,56 +33,64 @@ public class SO extends Thread {
         }
     }
 
-    public synchronized void setRequest(int processId, int[] request) {
+    public synchronized void setRequest(int processId, int[] request) throws InterruptedException {
+        HelloApplication.mutex.acquire();
         if (processId < HelloApplication.arrayR.size()) {
             for (int j = 0; j < numResources; j++) {
                 HelloApplication.arrayR.get(processId).get(j).release(request[j]);
             }
         }
+        HelloApplication.mutex.release();
     }
 
-    public synchronized boolean requestResources(int processId, int[] request) {
-        for (int j = 0; j < numResources; j++) {
-            if (request[j] > HelloApplication.arrayA.get(j).availablePermits()) {
-                Platform.runLater(() -> {
-                    HelloApplication.messages.add("Processo " + processId + " não conseguiu recursos e permanecerá aguardando.");
-                });
-                return false;
-            }
-        }
-        for (int j = 0; j < numResources; j++) {
-            try {
-                HelloApplication.arrayA.get(j).acquire(request[j]);
-                HelloApplication.arrayC.get(processId).get(j).release(request[j]);
-                HelloApplication.arrayR.get(processId).get(j).acquire(request[j]);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
-        Platform.runLater(() -> {
-            HelloApplication.messages.add("Processo " + processId + " teve os recursos alocados. Iniciando execução...");
-        });
-        return true;
-    }
+//    public synchronized boolean requestResources(int processId, int[] request) {
+//        for (int j = 0; j < numResources; j++) {
+//            if (request[j] > HelloApplication.arrayA.get(j).availablePermits()) {
+//                Platform.runLater(() -> {
+//                    HelloApplication.messages.add("Processo " + processId + " não conseguiu recursos e permanecerá aguardando.");
+//                });
+//                return false;
+//            }
+//        }
+//        for (int j = 0; j < numResources; j++) {
+//            try {
+//                HelloApplication.arrayA.get(j).acquire(request[j]);
+//                HelloApplication.arrayC.get(processId).get(j).release(request[j]);
+//                HelloApplication.arrayR.get(processId).get(j).acquire(request[j]);
+//            } catch (InterruptedException e) {
+//                e.printStackTrace();
+//            }
+//        }
+//        Platform.runLater(() -> {
+//            HelloApplication.messages.add("Processo " + processId + " teve os recursos alocados. Iniciando execução...");
+//        });
+//        return true;
+//    }
 
-    public synchronized void releaseResources(int processId) {
+    public synchronized void releaseResources(int processId) throws InterruptedException {
         for (int j = 0; j < numResources; j++) {
+            HelloApplication.mutex.acquire();
             int permits = HelloApplication.arrayC.get(processId).get(j).availablePermits();
+            HelloApplication.mutex.release();
             if (permits > 0) {
+                HelloApplication.mutex.acquire();
                 HelloApplication.arrayC.get(processId).get(j).acquireUninterruptibly(permits);
                 HelloApplication.arrayA.get(j).release(permits);
+                HelloApplication.mutex.release();
             }
         }
     }
 
-    public synchronized List<Integer> detectDeadlock() {
+    public synchronized List<Integer> detectDeadlock() throws InterruptedException {
         // Passo 1: Vetor de recursos existentes E
         // Passo 2: Matriz de alocação corrente C
         // Passo 3: Matriz de requisições R
         // Passo 4: Vetor de recursos disponíveis A
         int[] available = new int[numResources];
         for (int j = 0; j < numResources; j++) {
+            HelloApplication.mutex.acquire();
             available[j] = HelloApplication.arrayA.get(j).availablePermits();
+            HelloApplication.mutex.release();
         }
 
         // Passo 5: Percorrer R verificando processos que podem ser executados
@@ -97,16 +101,20 @@ public class SO extends Thread {
             for (int i = 0; i < numProcesses; i++) {
                 if (!finish[i]) {
                     boolean canExecute = true;
+                    HelloApplication.mutex.acquire();
                     for (int j = 0; j < numResources; j++) {
                         if (HelloApplication.arrayR.get(i).get(j).availablePermits() > available[j]) {
                             canExecute = false;
                             break;
                         }
                     }
+                    HelloApplication.mutex.release();
                     if (canExecute) {
                         // Simular execução e liberação de recursos
                         for (int j = 0; j < numResources; j++) {
+                            HelloApplication.mutex.acquire();
                             available[j] += HelloApplication.arrayC.get(i).get(j).availablePermits();
+                            HelloApplication.mutex.release();
                         }
                         finish[i] = true;
                         progress = true;
@@ -141,7 +149,7 @@ public class SO extends Thread {
         return newProcessId;
     }
 
-    public synchronized void removeProcess(int processId) {
+    public synchronized void removeProcess(int processId) throws InterruptedException {
         if (processId < numProcesses) {
             // Interrompe a thread do processo, se estiver rodando
             for (Thread thread : Thread.getAllStackTraces().keySet()) {
@@ -214,13 +222,10 @@ public class SO extends Thread {
                     if (!deadlockedProcesses.isEmpty()) {
                         HelloApplication.messages.add("DEADLOCK DETECTADO! Processos envolvidos: " + deadlockedProcesses);
                     }
-//                    else {
-//                       // HelloApplication.messages.add("Sistema seguro. Nenhum deadlock detectado.");
-//                    }
+
                 });
             }
         } catch (InterruptedException e) {
-            // Tratamento, se necessário
         }
     }
 }

@@ -21,17 +21,21 @@ public class Process extends Thread {
         this.utilizationTime = utilizationTime;
     }
 
-    public void requestResource() {
+    public void requestResource() throws InterruptedException {
         Random random = new Random();
 
         // Cria um vetor de solicitação com N recursos requisitados
+        HelloApplication.mutex.acquire();
         int[] request = new int[HelloApplication.arrayE.size()];
+        HelloApplication.mutex.release();
         boolean hasRequestedAtLeastOne = false;
 
         while (!hasRequestedAtLeastOne) { // Garante que pelo menos 1 recurso seja requisitado
             for (int j = 0; j < request.length; j++) {
                 // Define quantas instâncias do recurso j serão requisitadas (entre 1 e o máximo disponível)
+                HelloApplication.mutex.acquire();
                 int maxInstances = HelloApplication.arrayE.get(j);
+                HelloApplication.mutex.release();
                 request[j] = random.nextInt(maxInstances) + 1; // Requisita entre 1 e maxInstances
                 hasRequestedAtLeastOne = true; // Marca que pelo menos 1 recurso foi requisitado
             }
@@ -72,7 +76,6 @@ public class Process extends Thread {
         }
     }
 
-
     private String vectorToString(int[] v) {
         StringBuilder sb = new StringBuilder("[");
         for (int i = 0; i < v.length; i++) {
@@ -89,13 +92,14 @@ public class Process extends Thread {
             while (true) {
                 // Verifica se o processo já está utilizando algum recurso
                 boolean isUsingResource = false;
+                HelloApplication.mutex.acquire();
                 for (int j = 0; j < HelloApplication.arrayC.get(id).size(); j++) {
                     if (HelloApplication.arrayC.get(id).get(j).availablePermits() > 0) {
                         isUsingResource = true;
                         break;
                     }
                 }
-
+                HelloApplication.mutex.release();
                 // Se não estiver utilizando nenhum recurso, solicita um novo
                 if (!isUsingResource) {
                     Thread.sleep(requestIntervalTime * 1000); // Aguarda ΔTs segundos

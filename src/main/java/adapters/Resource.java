@@ -12,22 +12,10 @@ public class Resource {
         this.totalInstances = totalInstances;
     }
 
-    public int getId() {
-        return id;
-    }
     public String getName() {
         return name;
     }
     public int getTotalInstances() {
         return totalInstances;
-    }
-    public void setId(int id) {
-        this.id = id;
-    }
-    public void setName(String name) {
-        this.name = name;
-    }
-    public void setTotalInstances(int totalInstances) {
-        this.totalInstances = totalInstances;
     }
 }
