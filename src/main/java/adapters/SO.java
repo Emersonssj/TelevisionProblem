@@ -75,9 +75,6 @@ public class SO extends Thread {
             if (permits > 0) {
                 HelloApplication.arrayC.get(processId).get(j).acquireUninterruptibly(permits);
                 HelloApplication.arrayA.get(j).release(permits);
-//                Platform.runLater(() -> {
-//                    HelloApplication.messages.add("Processo " + processId + " liberou " + permits + " instância(s) do recurso R" + (j + 1));
-//                });
             }
         }
     }
@@ -119,20 +116,6 @@ public class SO extends Thread {
             }
         }
         return deadlockedProcesses;
-    }
-
-    // Método para adicionar um novo recurso (expande os arrays e atualiza as matrizes)
-    public synchronized void addResource(int totalInstances) {
-        HelloApplication.arrayE.add(totalInstances);
-        HelloApplication.arrayA.add(new Semaphore(totalInstances));
-        for (ArrayList<Semaphore> row : HelloApplication.arrayC) {
-            row.add(new Semaphore(0));
-        }
-        for (ArrayList<Semaphore> row : HelloApplication.arrayR) {
-            row.add(new Semaphore(0));
-        }
-        numResources++;
-        HelloApplication.messages.add("Novo recurso adicionado. Total de recursos agora: " + numResources);
     }
 
     // Método para adicionar um novo processo (expande as matrizes e retorna o novo id)
@@ -182,35 +165,36 @@ public class SO extends Thread {
         }
     }
 
-
-    public synchronized boolean requestOneResource(int processId) {
+    public synchronized boolean requestAllResources(int processId, int[] request) {
+        // Verifica se todos os recursos solicitados estão disponíveis
         for (int j = 0; j < numResources; j++) {
-            // Verifica se o processo requisitou o recurso j e se ele está disponível
-            if (HelloApplication.arrayR.get(processId).get(j).availablePermits() > 0 &&
-                    HelloApplication.arrayA.get(j).availablePermits() > 0) {
+            if (request[j] > HelloApplication.arrayA.get(j).availablePermits()) {
+                // Se algum recurso não estiver disponível, retorna false
+                Platform.runLater(() -> {
+                    HelloApplication.messages.add("Processo " + processId + " não conseguiu alocar todos os recursos. Aguardando...");
+                });
+                return false;
+            }
+        }
+
+        // Se todos os recursos estiverem disponíveis, aloca-os
+        for (int j = 0; j < numResources; j++) {
+            if (request[j] > 0) {
                 try {
-                    // Aloca 1 instância do recurso j
-                    HelloApplication.arrayA.get(j).acquire(1);
-                    HelloApplication.arrayC.get(processId).get(j).release(1);
-                    HelloApplication.arrayR.get(processId).get(j).acquire(1);
-                    return true; // Recurso alocado com sucesso
+                    HelloApplication.arrayA.get(j).acquire(request[j]);
+                    HelloApplication.arrayC.get(processId).get(j).release(request[j]);
+                    HelloApplication.arrayR.get(processId).get(j).acquire(request[j]);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
+                    return false;
                 }
             }
         }
-        return false; // Nenhum recurso disponível para alocar
-    }
 
-    public synchronized void releaseOneResource(int processId) {
-        for (int j = 0; j < numResources; j++) {
-            // Libera 1 instância do recurso j, se estiver alocado
-            if (HelloApplication.arrayC.get(processId).get(j).availablePermits() > 0) {
-                HelloApplication.arrayC.get(processId).get(j).acquireUninterruptibly(1);
-                HelloApplication.arrayA.get(j).release(1);
-                break; // Libera apenas 1 recurso por vez
-            }
-        }
+        Platform.runLater(() -> {
+            HelloApplication.messages.add("Processo " + processId + " alocou todos os recursos solicitados.");
+        });
+        return true;
     }
 
     @Override

@@ -231,50 +231,6 @@ public class HelloApplication extends Application {
         timeline.setCycleCount(Timeline.INDEFINITE);
         timeline.play();
 
-        // Botão "Adicionar Recurso" na tela principal (permite expandir o vetor de recursos)
-//        btnAddResource.setOnAction(e -> {
-//            Stage addResourceStage = new Stage();
-//            addResourceStage.initModality(Modality.APPLICATION_MODAL);
-//            addResourceStage.setTitle("Adicionar Recurso");
-//
-//            Label idLabel = new Label("Identificador do Recurso:");
-//            TextField idInput = new TextField();
-//            Label nameLabel = new Label("Nome do Recurso:");
-//            TextField nameInput = new TextField();
-//            Label quantityLabel = new Label("Quantidade de Instâncias:");
-//            TextField quantityInput = new TextField();
-//            Button addButton = new Button("Adicionar");
-//
-//            VBox layout = new VBox(10);
-//            layout.setPadding(new Insets(10));
-//            layout.getChildren().addAll(idLabel, idInput, nameLabel, nameInput, quantityLabel, quantityInput, addButton);
-//
-//            Scene sceneResource = new Scene(layout, 250, 250);
-//            addResourceStage.setScene(sceneResource);
-//            addResourceStage.show();
-//
-//            addButton.setOnAction(event -> {
-//                try {
-//                    int resId = Integer.parseInt(idInput.getText());
-//                    String resName = nameInput.getText().trim();
-//                    int totalInstances = Integer.parseInt(quantityInput.getText());
-//                    if (resName.isEmpty()) {
-//                        throw new NumberFormatException("Nome vazio");
-//                    }
-//                    Resource novoRecurso = new Resource(resId, resName, totalInstances);
-//                    resourceData.add(novoRecurso);
-//                    so.addResource(totalInstances);
-//                    numResources = HelloApplication.arrayE.size();
-//                    updateMatrixColumns();
-//                    addResourceStage.close();
-//                    Alert alert = new Alert(Alert.AlertType.INFORMATION, "Recurso adicionado com sucesso!");
-//                    alert.showAndWait();
-//                } catch (NumberFormatException ex) {
-//                    Alert alert = new Alert(Alert.AlertType.ERROR, "Preencha os campos corretamente!");
-//                    alert.showAndWait();
-//                }
-//            });
-//        });
 
         // Botão "Adicionar Processo" na tela principal
         btnAddProcess.setOnAction(e -> {
